@@ -1,0 +1,7 @@
+{
+  "name": "Think ALM Sales",
+  "description": "AI-powered sales training platform featuring call analysis, roleplay agents, and team management.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
