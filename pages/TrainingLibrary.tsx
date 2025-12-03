@@ -95,6 +95,22 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   // Check if user has admin/super admin access
   const hasFullAccess = currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN;
 
+  // Check if user can upload (admin, super admin, or manager)
+  const canUpload = hasFullAccess || currentUser.role === UserRole.MANAGER;
+
+  // Check if user can edit a specific material
+  const canEditMaterial = (material: TrainingMaterial): boolean => {
+    // Admins and Super Admins can edit everything
+    if (hasFullAccess) return true;
+
+    // Managers can only edit TEAM materials from their own team
+    if (currentUser.role === UserRole.MANAGER) {
+      return material.visibility === 'TEAM' && material.teamId === currentUser.team;
+    }
+
+    return false;
+  };
+
   const handleEditMaterial = (material: TrainingMaterial) => {
     setEditingMaterial(material);
     setEditTitle(material.title);
@@ -165,9 +181,9 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                 <option value="Product Knowledge">Product Knowledge</option>
             </select>
             
-            {/* Admin Only Upload Button */}
-            {currentUser.role === UserRole.ADMIN && (
-                <button 
+            {/* Upload Button - Available to Admin, Super Admin, and Managers */}
+            {canUpload && (
+                <button
                     onClick={() => setIsUploadOpen(true)}
                     className="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-brand-500/25 transition-colors"
                 >
@@ -223,7 +239,7 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                   >
                     <Download size={16} />
                   </button>
-                  {hasFullAccess && (
+                  {canEditMaterial(item) && (
                     <>
                       <button
                         onClick={() => handleEditMaterial(item)}
@@ -326,7 +342,7 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                       <div>
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Visibility Scope</label>
                           <div className="grid grid-cols-2 gap-4">
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => setUploadVisibility('TEAM')}
                                 className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${uploadVisibility === 'TEAM' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
@@ -334,19 +350,29 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                                   <Users size={20} />
                                   <span className="text-xs font-bold">My Team Only</span>
                               </button>
-                              <button 
-                                type="button"
-                                onClick={() => setUploadVisibility('GLOBAL')}
-                                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${uploadVisibility === 'GLOBAL' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
-                              >
-                                  <Globe size={20} />
-                                  <span className="text-xs font-bold">Everyone (Global)</span>
-                              </button>
+                              {hasFullAccess && (
+                                <button
+                                  type="button"
+                                  onClick={() => setUploadVisibility('GLOBAL')}
+                                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${uploadVisibility === 'GLOBAL' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
+                                >
+                                    <Globe size={20} />
+                                    <span className="text-xs font-bold">Everyone (Global)</span>
+                                </button>
+                              )}
+                              {!hasFullAccess && (
+                                <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col items-center gap-2 opacity-50 cursor-not-allowed">
+                                    <Globe size={20} className="text-slate-600" />
+                                    <span className="text-xs font-bold text-slate-600">Global (Admin Only)</span>
+                                </div>
+                              )}
                           </div>
                           <p className="text-[10px] text-slate-500 mt-2 text-center">
-                              {uploadVisibility === 'TEAM' 
-                                ? `Visible only to members of ${currentUser.team}` 
-                                : 'Visible to all users in the organization'}
+                              {uploadVisibility === 'TEAM'
+                                ? `Visible only to members of ${currentUser.team}`
+                                : hasFullAccess
+                                  ? 'Visible to all users in the organization'
+                                  : 'Only admins can create global materials'}
                           </p>
                       </div>
 
@@ -434,19 +460,29 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                                   <Users size={20} />
                                   <span className="text-xs font-bold">My Team Only</span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditVisibility('GLOBAL')}
-                                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${editVisibility === 'GLOBAL' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
-                              >
-                                  <Globe size={20} />
-                                  <span className="text-xs font-bold">Everyone (Global)</span>
-                              </button>
+                              {hasFullAccess && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditVisibility('GLOBAL')}
+                                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${editVisibility === 'GLOBAL' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
+                                >
+                                    <Globe size={20} />
+                                    <span className="text-xs font-bold">Everyone (Global)</span>
+                                </button>
+                              )}
+                              {!hasFullAccess && (
+                                <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col items-center gap-2 opacity-50 cursor-not-allowed">
+                                    <Globe size={20} className="text-slate-600" />
+                                    <span className="text-xs font-bold text-slate-600">Global (Admin Only)</span>
+                                </div>
+                              )}
                           </div>
                           <p className="text-[10px] text-slate-500 mt-2 text-center">
                               {editVisibility === 'TEAM'
                                 ? `Visible only to members of ${currentUser.team}`
-                                : 'Visible to all users in the organization'}
+                                : hasFullAccess
+                                  ? 'Visible to all users in the organization'
+                                  : 'Only admins can create global materials'}
                           </p>
                       </div>
 
