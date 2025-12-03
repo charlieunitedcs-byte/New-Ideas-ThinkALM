@@ -12,6 +12,36 @@ console.log('Environment:', import.meta.env);
 // to protect the key, but for this SPA demo, we use it directly.
 const ai = new GoogleGenAI({ apiKey });
 
+// Helper function to retry API calls with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelay: number = 1000
+): Promise<T> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isOverloaded = error?.message?.includes('overloaded') ||
+                          error?.status === 'UNAVAILABLE' ||
+                          error?.code === 503;
+
+      const isLastAttempt = i === maxRetries - 1;
+
+      if (!isOverloaded || isLastAttempt) {
+        throw error;
+      }
+
+      // Wait with exponential backoff
+      const delay = initialDelay * Math.pow(2, i);
+      console.log(`API overloaded, retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw new Error('Max retries exceeded');
+}
+
 export const analyzeCallTranscript = async (transcript: string): Promise<CallAnalysisResult> => {
   if (!apiKey) {
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
@@ -34,37 +64,42 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: { type: Type.NUMBER },
-            summary: { type: Type.STRING },
-            strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-            improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
-            tone: { type: Type.STRING },
-            emotionalIntelligence: { type: Type.NUMBER },
+    return await retryWithBackoff(async () => {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              score: { type: Type.NUMBER },
+              summary: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+              tone: { type: Type.STRING },
+              emotionalIntelligence: { type: Type.NUMBER },
+            },
+            required: ["score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
           },
-          required: ["score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
         },
-      },
+      });
+
+      const text = response.text;
+      if (!text) throw new Error("No response from AI");
+
+      const result = JSON.parse(text);
+      return {
+        ...result,
+        transcript: transcript
+      };
     });
 
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
-
-    const result = JSON.parse(text);
-    return {
-      ...result,
-      transcript: transcript
-    };
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("Analysis failed", error);
+    if (error?.message?.includes('overloaded') || error?.status === 'UNAVAILABLE') {
+      throw new Error("Google AI is currently overloaded. Please try again in a few moments.");
+    }
     throw error;
   }
 };
@@ -95,47 +130,51 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
       7. emotionalIntelligence - score (0-100) for how well the rep read and responded to prospect emotions
     `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: audioFile.type || 'audio/mpeg',
-                data: base64Audio
+    return await retryWithBackoff(async () => {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: audioFile.type || 'audio/mpeg',
+                  data: base64Audio
+                }
               }
-            }
-          ]
-        }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            transcript: { type: Type.STRING },
-            score: { type: Type.NUMBER },
-            summary: { type: Type.STRING },
-            strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-            improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
-            tone: { type: Type.STRING },
-            emotionalIntelligence: { type: Type.NUMBER },
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              transcript: { type: Type.STRING },
+              score: { type: Type.NUMBER },
+              summary: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+              tone: { type: Type.STRING },
+              emotionalIntelligence: { type: Type.NUMBER },
+            },
+            required: ["transcript", "score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
           },
-          required: ["transcript", "score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
         },
-      },
+      });
+
+      const text = response.text;
+      if (!text) throw new Error("No response from AI");
+
+      return JSON.parse(text);
     });
 
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
-
-    const result = JSON.parse(text);
-    return result;
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("Audio analysis failed", error);
+    if (error?.message?.includes('overloaded') || error?.status === 'UNAVAILABLE') {
+      throw new Error("Google AI is currently overloaded. Please try again in a few moments.");
+    }
     throw error;
   }
 };
