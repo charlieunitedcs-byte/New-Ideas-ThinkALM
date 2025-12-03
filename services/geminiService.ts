@@ -65,6 +65,95 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
   }
 };
 
+export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisResult> => {
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
+  }
+
+  const model = "gemini-2.0-flash-exp";
+
+  try {
+    // Convert audio file to base64
+    const base64Audio = await fileToBase64(audioFile);
+
+    const prompt = `
+      You are an expert sales coach for "Think ABC".
+
+      Listen to this sales call recording and provide a comprehensive analysis.
+
+      Provide a JSON response with:
+      1. transcript - the full transcript of the conversation with speaker labels (Sales Rep: and Prospect:)
+      2. score - performance score (0-100)
+      3. summary - brief executive summary (max 2 sentences)
+      4. strengths - array of top 3 strengths
+      5. improvements - array of top 3 areas for improvement
+      6. tone - analyze the sales rep's tone (e.g., confident, hesitant, enthusiastic, pushy, professional)
+      7. emotionalIntelligence - score (0-100) for how well the rep read and responded to prospect emotions
+    `;
+
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: audioFile.type || 'audio/mpeg',
+                data: base64Audio
+              }
+            }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            transcript: { type: Type.STRING },
+            score: { type: Type.NUMBER },
+            summary: { type: Type.STRING },
+            strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+            improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+            tone: { type: Type.STRING },
+            emotionalIntelligence: { type: Type.NUMBER },
+          },
+          required: ["transcript", "score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+
+    const result = JSON.parse(text);
+    return result;
+
+  } catch (error) {
+    console.error("Audio analysis failed", error);
+    throw error;
+  }
+};
+
+// Helper function to convert File to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        // Remove the data URL prefix (e.g., "data:audio/mpeg;base64,")
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export const startRoleplaySession = (customSystemInstruction?: string) => {
   if (!apiKey) {
     console.warn("API Key missing for roleplay");

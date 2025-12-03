@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles } from 'lucide-react';
-import { analyzeCallTranscript } from '../services/geminiService';
+import { analyzeCallTranscript, analyzeCallAudio } from '../services/geminiService';
 import { CallAnalysisResult, Comment } from '../types';
 
 const CallAnalysis: React.FC = () => {
@@ -39,12 +39,30 @@ const CallAnalysis: React.FC = () => {
     }
   };
 
-  const handleMockUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setTimeout(() => {
-        setTranscriptInput("Sales Rep: Hi, this is John from Think ALM. Did I catch you at a bad time?\nProspect: Actually, I have a few minutes. What's this about?\nSales Rep: Great. I noticed your team is expanding and I wanted to see how you're handling sales onboarding currently.\nProspect: It's a bit of a mess, honestly. We use spreadsheets and random PDFs.\nSales Rep: I hear that a lot. Think ALM centralizes that. We have an AI roleplay agent that can cut ramp time by 40%.\nProspect: That sounds expensive. We have a tight budget.\nSales Rep: It's actually very competitive. Let's schedule a demo next Tuesday to show you the ROI.");
-        setTab('paste');
-      }, 1500);
+      const audioFile = e.target.files[0];
+
+      setIsAnalyzing(true);
+      setError(null);
+      setResult(null);
+      setComments([]);
+      setShowGamificationToast(false);
+
+      try {
+        const data = await analyzeCallAudio(audioFile);
+        setResult(data);
+        setTranscriptInput(data.transcript);
+        setTab('paste'); // Switch to paste tab to show transcript
+        // Trigger gamification toast
+        setTimeout(() => setShowGamificationToast(true), 500);
+      } catch (err) {
+        console.error("Audio analysis error:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to analyze audio. Please ensure your API key is set and the audio file is valid.";
+        setError(errorMessage);
+      } finally {
+        setIsAnalyzing(false);
+      }
     }
   };
 
@@ -136,27 +154,42 @@ const CallAnalysis: React.FC = () => {
               </div>
             ) : (
               <div className="border-2 border-dashed border-slate-700 rounded-xl p-16 flex flex-col items-center justify-center text-center hover:bg-slate-800/20 transition-colors group">
-                <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <UploadCloud size={40} className="text-brand-400 group-hover:text-brand-300" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">Upload Audio File</h3>
-                <p className="text-slate-500 text-sm max-w-sm mb-8">
-                  Supports MP3, WAV, M4A. Max file size 50MB. <br/>
-                  <span className="text-xs text-brand-400/70">(Demo: Selecting a file will auto-fill transcript)</span>
-                </p>
-                <input 
-                  type="file" 
-                  id="audio-upload"
-                  className="hidden"
-                  accept="audio/*"
-                  onChange={handleMockUpload}
-                />
-                <label 
-                  htmlFor="audio-upload"
-                  className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl cursor-pointer transition-colors border border-slate-600 hover:border-slate-500"
-                >
-                  Select File
-                </label>
+                {isAnalyzing ? (
+                  <>
+                    <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-6">
+                      <Loader2 size={40} className="text-brand-400 animate-spin" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Analyzing Audio...</h3>
+                    <p className="text-slate-500 text-sm max-w-sm">
+                      Processing your call recording with AI. This may take a minute.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <UploadCloud size={40} className="text-brand-400 group-hover:text-brand-300" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Upload Audio File</h3>
+                    <p className="text-slate-500 text-sm max-w-sm mb-8">
+                      Supports MP3, WAV, M4A. Max file size 50MB. <br/>
+                      <span className="text-xs text-emerald-400/70">AI will transcribe and analyze your call automatically.</span>
+                    </p>
+                    <input
+                      type="file"
+                      id="audio-upload"
+                      className="hidden"
+                      accept="audio/*"
+                      onChange={handleAudioUpload}
+                      disabled={isAnalyzing}
+                    />
+                    <label
+                      htmlFor="audio-upload"
+                      className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl cursor-pointer transition-colors border border-slate-600 hover:border-slate-500"
+                    >
+                      Select File
+                    </label>
+                  </>
+                )}
               </div>
             )}
             
