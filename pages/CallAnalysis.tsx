@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles } from 'lucide-react';
-import { analyzeCallTranscript, analyzeCallAudio } from '../services/geminiService';
+import { analyzeCallTranscript, analyzeCallAudio } from '../services/openaiService';
 import { CallAnalysisResult, Comment } from '../types';
 
 const CallAnalysis: React.FC = () => {
@@ -148,7 +148,7 @@ const CallAnalysis: React.FC = () => {
                     className="px-8 py-3 bg-gradient-to-r from-brand-600 to-accent-600 hover:from-brand-500 hover:to-accent-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all transform hover:scale-105"
                     >
                     {isAnalyzing ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />}
-                    {isAnalyzing ? 'Analyzing with Gemini...' : 'Analyze Transcript'}
+                    {isAnalyzing ? 'Analyzing with AI...' : 'Analyze Transcript'}
                     </button>
                 </div>
               </div>
