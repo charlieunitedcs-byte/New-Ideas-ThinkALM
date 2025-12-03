@@ -18,11 +18,11 @@ const CallAnalysis: React.FC = () => {
 
   const handleAnalyze = async () => {
     if (!transcriptInput.trim()) return;
-    
+
     setIsAnalyzing(true);
     setError(null);
     setResult(null);
-    setComments([]); 
+    setComments([]);
     setShowGamificationToast(false);
 
     try {
@@ -31,7 +31,9 @@ const CallAnalysis: React.FC = () => {
       // Trigger gamification toast
       setTimeout(() => setShowGamificationToast(true), 500);
     } catch (err) {
-      setError("Failed to analyze call. Please ensure your API key is set and try again.");
+      console.error("Analysis error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to analyze call. Please ensure your API key is set and try again.";
+      setError(errorMessage);
     } finally {
       setIsAnalyzing(false);
     }

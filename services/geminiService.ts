@@ -10,10 +10,10 @@ const ai = new GoogleGenAI({ apiKey });
 
 export const analyzeCallTranscript = async (transcript: string): Promise<CallAnalysisResult> => {
   if (!apiKey) {
-    throw new Error("API Key is missing. Please set process.env.API_KEY.");
+    throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  const model = "gemini-2.5-flash";
+  const model = "gemini-2.0-flash-exp";
   
   const prompt = `
     You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
@@ -76,7 +76,7 @@ export const startRoleplaySession = (customSystemInstruction?: string) => {
 
   // Initialize a chat session
   const chat = ai.chats.create({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash-exp",
     config: {
       systemInstruction: systemInstruction,
     },
@@ -97,7 +97,7 @@ export const searchMarketIntel = async (query: string): Promise<SearchResult> =>
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
