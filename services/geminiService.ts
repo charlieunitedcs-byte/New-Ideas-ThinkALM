@@ -13,9 +13,10 @@ console.log('Environment:', import.meta.env);
 const ai = new GoogleGenAI({ apiKey });
 
 // Helper function to retry API calls with exponential backoff
+// Increased retries for production reliability
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
+  maxRetries: number = 5,
   initialDelay: number = 1000
 ): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
@@ -47,7 +48,8 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  const model = "gemini-2.5-flash";
+  // Using gemini-1.5-flash for better availability (less traffic than 2.5)
+  const model = "gemini-1.5-flash";
   
   const prompt = `
     You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
@@ -109,7 +111,8 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  const model = "gemini-2.5-flash";
+  // Using gemini-1.5-flash for better availability (less traffic than 2.5)
+  const model = "gemini-1.5-flash";
 
   try {
     // Convert audio file to base64
