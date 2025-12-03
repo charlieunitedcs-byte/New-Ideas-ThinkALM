@@ -3,8 +3,12 @@ import { CallAnalysisResult } from "../types";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-// Initialize client securely. 
-// Note: In a real production app, analysis logic should ideally happen server-side 
+// Debug logging
+console.log('API Key loaded:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+console.log('Environment:', import.meta.env);
+
+// Initialize client securely.
+// Note: In a real production app, analysis logic should ideally happen server-side
 // to protect the key, but for this SPA demo, we use it directly.
 const ai = new GoogleGenAI({ apiKey });
 
@@ -13,7 +17,7 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  const model = "gemini-2.0-flash-exp";
+  const model = "gemini-2.5-flash";
   
   const prompt = `
     You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
@@ -70,7 +74,7 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  const model = "gemini-2.0-flash-exp";
+  const model = "gemini-2.5-flash";
 
   try {
     // Convert audio file to base64
@@ -165,7 +169,7 @@ export const startRoleplaySession = (customSystemInstruction?: string) => {
 
   // Initialize a chat session
   const chat = ai.chats.create({
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-2.5-flash",
     config: {
       systemInstruction: systemInstruction,
     },
@@ -186,7 +190,7 @@ export const searchMarketIntel = async (query: string): Promise<SearchResult> =>
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
