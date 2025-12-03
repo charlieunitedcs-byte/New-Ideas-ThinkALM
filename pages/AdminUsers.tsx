@@ -21,8 +21,8 @@ const AdminUsers: React.FC = () => {
           <h1 className="text-3xl font-bold text-white mb-2">User Access</h1>
           <p className="text-slate-400">Manage team roles, permissions, and subscriptions.</p>
         </div>
-        <button 
-          onClick={() => notify("Invite sent! New member will receive an email shortly.", "success")}
+        <button
+          onClick={() => notify("Demo: In production, an invitation email would be sent to the new team member with login instructions.", "info")}
           className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-brand-500/25"
         >
           + Add Member

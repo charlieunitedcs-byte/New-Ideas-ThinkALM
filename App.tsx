@@ -32,6 +32,7 @@ import Login from './pages/Login';
 import Campaigns from './pages/Campaigns';
 import LandingPage from './pages/LandingPage';
 import ClientManagement from './pages/ClientManagement';
+import Signup from './pages/Signup';
 import { UserRole, User, SubscriptionPlan } from './types';
 import { getCurrentUser, clearUserSession } from './services/authService';
 
@@ -213,8 +214,11 @@ const Toast = ({ message, type, onClose }: { message: string, type: string, onCl
 const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'landing' | 'login' | 'app'>('landing');
+  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'app'>('landing');
   const [notification, setNotification] = useState<{msg: string, type: string} | null>(null);
+  const [demoMode, setDemoMode] = useState(() => {
+    return localStorage.getItem('demo-mode') !== 'false';
+  });
 
   // Check for existing session on mount
   useEffect(() => {
@@ -241,13 +245,24 @@ const App: React.FC = () => {
     setView('landing');
   };
 
+  // Toggle demo mode
+  const toggleDemoMode = (enabled: boolean) => {
+    setDemoMode(enabled);
+    localStorage.setItem('demo-mode', enabled.toString());
+    notify(`Demo mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
+  };
+
   // Logic to render based on view state
   if (view === 'landing') {
-      return <LandingPage onLoginClick={() => setView('login')} />;
+      return <LandingPage onLoginClick={() => setView('login')} onSignupClick={() => setView('signup')} />;
   }
 
   if (view === 'login') {
     return <Login onLogin={handleLogin} />;
+  }
+
+  if (view === 'signup') {
+    return <Signup onSignupComplete={() => setView('login')} onBackToLogin={() => setView('login')} />;
   }
 
   // App View (Logged In)
@@ -267,26 +282,28 @@ const App: React.FC = () => {
           <Header onMenuClick={() => setSidebarOpen(true)} user={user} />
 
           {/* Demo Mode Badge */}
-          <div className="lg:pl-64 px-4 lg:px-8 pt-4">
-            <div className="max-w-[1600px] mx-auto">
-              <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg px-4 py-2.5 flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🎮</span>
-                  <span className="text-sm font-semibold text-amber-200">Demo Mode</span>
+          {demoMode && (
+            <div className="lg:pl-64 px-4 lg:px-8 pt-4">
+              <div className="max-w-[1600px] mx-auto">
+                <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-lg px-4 py-2.5 flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🎮</span>
+                    <span className="text-sm font-semibold text-amber-200">Demo Mode</span>
+                  </div>
+                  <div className="h-4 w-px bg-amber-500/30"></div>
+                  <p className="text-xs text-amber-100/80 flex-1">
+                    You're viewing sample data. All features are fully functional for demonstration purposes.
+                  </p>
+                  <button
+                    onClick={() => notify("Demo mode helps you explore all features without real data. Toggle it off in Settings.", "info")}
+                    className="text-xs text-amber-300 hover:text-amber-100 font-medium transition-colors"
+                  >
+                    Learn More
+                  </button>
                 </div>
-                <div className="h-4 w-px bg-amber-500/30"></div>
-                <p className="text-xs text-amber-100/80 flex-1">
-                  You're viewing sample data. All features are fully functional for demonstration purposes.
-                </p>
-                <button
-                  onClick={() => notify("Demo mode helps you explore all features without real data.", "info")}
-                  className="text-xs text-amber-300 hover:text-amber-100 font-medium transition-colors"
-                >
-                  Learn More
-                </button>
               </div>
             </div>
-          </div>
+          )}
 
           <main className="lg:pl-64 pt-4 pb-12 px-4 lg:px-8 max-w-[1600px] mx-auto transition-all duration-300">
              <Routes>
@@ -300,7 +317,7 @@ const App: React.FC = () => {
                <Route path="/ai-agents" element={<AIAgentConfig currentUser={user!} />} />
                <Route path="/clients" element={<ClientManagement currentUser={user!} />} />
                <Route path="/admin" element={<AdminUsers />} />
-               <Route path="/settings" element={<Settings />} />
+               <Route path="/settings" element={<Settings demoMode={demoMode} onToggleDemoMode={toggleDemoMode} />} />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>
           </main>

@@ -4,9 +4,10 @@ import { Bot, ArrowRight, Shield, Zap, BarChart2, Globe, Check, Play, Star, Awar
 
 interface LandingPageProps {
   onLoginClick: () => void;
+  onSignupClick: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }) => {
   return (
     <div className="min-h-screen bg-[#05060e] text-white overflow-x-hidden font-sans selection:bg-brand-500/30">
       {/* Navigation */}
@@ -22,12 +23,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <a href="#" className="hover:text-white transition-colors">Security</a>
         </div>
-        <button 
-            onClick={onLoginClick}
-            className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-all font-medium text-sm"
-        >
-            Login
-        </button>
+        <div className="flex items-center gap-3">
+            <button
+                onClick={onLoginClick}
+                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 transition-all font-medium text-sm"
+            >
+                Login
+            </button>
+            <button
+                onClick={onSignupClick}
+                className="px-6 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-all font-medium text-sm shadow-lg shadow-brand-500/20"
+            >
+                Sign Up Free
+            </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -71,7 +80,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
-                    onClick={onLoginClick}
+                    onClick={onSignupClick}
                     className="px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-brand-500/25 transition-all flex items-center gap-2 group"
                 >
                     Start Free Trial - Get 23% More Deals <ArrowRight className="group-hover:translate-x-1 transition-transform" />
