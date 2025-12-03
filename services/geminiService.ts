@@ -16,7 +16,7 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
   const model = "gemini-2.5-flash";
   
   const prompt = `
-    You are an expert sales coach for "Think ALM Sales". Analyze the following sales call transcript.
+    You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
     Provide a JSON response with:
     1. A performance score (0-100).
     2. A brief executive summary (max 2 sentences).
@@ -68,7 +68,7 @@ export const startRoleplaySession = (customSystemInstruction?: string) => {
   }
 
   // Use custom instruction or fall back to default
-  const systemInstruction = customSystemInstruction || "You are a skeptical but interested potential buyer for a SaaS product (Think ALM). You are speaking with a sales representative. Be realistic, ask about pricing, implementation time, and competitor differentiation. Keep responses concise (under 50 words) to mimic real conversation.";
+  const systemInstruction = customSystemInstruction || "You are a skeptical but interested potential buyer for a SaaS product (Think ABC). You are speaking with a sales representative. Be realistic, ask about pricing, implementation time, and competitor differentiation. Keep responses concise (under 50 words) to mimic real conversation.";
 
   // Initialize a chat session
   const chat = ai.chats.create({

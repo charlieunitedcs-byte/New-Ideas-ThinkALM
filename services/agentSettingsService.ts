@@ -11,12 +11,12 @@ export interface AgentSettings {
   recordSessions: boolean;
 }
 
-const STORAGE_KEY = 'think-alm-agent-settings';
+const STORAGE_KEY = 'think-abc-agent-settings';
 
 // Default settings
 const DEFAULT_SETTINGS: AgentSettings = {
   personaName: 'Skeptical CIO - Enterprise',
-  systemPrompt: "You are a skeptical but interested potential buyer for a SaaS product (Think ALM). You are speaking with a sales representative. Be realistic, ask about pricing, implementation time, and competitor differentiation. Keep responses concise (under 50 words) to mimic real conversation.",
+  systemPrompt: "You are a skeptical but interested potential buyer for a SaaS product (Think ABC). You are speaking with a sales representative. Be realistic, ask about pricing, implementation time, and competitor differentiation. Keep responses concise (under 50 words) to mimic real conversation.",
   voiceProvider: 'vapi',
   voiceId: 'sarah-professional',
   stability: 0.50,

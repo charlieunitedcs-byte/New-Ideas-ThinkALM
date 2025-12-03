@@ -15,7 +15,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-accent-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
                 <Bot className="text-white" size={24} />
             </div>
-            <span className="text-xl font-bold tracking-tight">Think ALM</span>
+            <span className="text-xl font-bold tracking-tight">Think ABC</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>

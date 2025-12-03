@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Bot, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { authenticateUser, saveUserSession } from '../services/authService';
+import { User } from '../types';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -18,10 +20,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     // Simulate API delay
     setTimeout(() => {
-      if (email && password) {
-        onLogin();
+      const user = authenticateUser(email, password);
+      if (user) {
+        saveUserSession(user);
+        onLogin(user);
       } else {
-        setError('Please enter both email and password.');
+        setError('Invalid credentials. Please check your email and password.');
         setIsLoading(false);
       }
     }, 1500);
@@ -40,7 +44,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="w-16 h-16 bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)] mx-auto mb-6 transform rotate-3 hover:rotate-6 transition-transform duration-500">
             <Bot className="text-white" size={32} />
           </div>
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Think ALM</h1>
+          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Think ABC</h1>
           <p className="text-brand-300 font-medium tracking-widest text-xs uppercase">Sales Command Operating System</p>
         </div>
 
@@ -50,11 +54,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Access Credentials</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-3.5 text-slate-500 group-focus-within:text-brand-400 transition-colors" size={18} />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@thinkalm.com"
+                  placeholder="admin@thinkabc.com"
                   className="w-full bg-slate-950/50 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-slate-200 outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 transition-all placeholder:text-slate-700"
                 />
               </div>

@@ -1,5 +1,6 @@
 
 export enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   MEMBER = 'MEMBER'
 }
@@ -87,4 +88,19 @@ export interface Campaign {
   avgScore: number;
   revenue: number;
   teamMembers: string[];
+}
+
+export interface Client {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  plan: SubscriptionPlan;
+  status: 'Active' | 'Trialing' | 'Cancelled' | 'Suspended';
+  subscriptionId?: string; // Stripe subscription ID
+  createdDate: string;
+  lastActive: string;
+  totalUsers: number;
+  monthlyRevenue: number;
 }

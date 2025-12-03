@@ -17,7 +17,8 @@ import {
   Cpu,
   Sparkles,
   Info,
-  Megaphone
+  Megaphone,
+  Building
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import CallAnalysis from './pages/CallAnalysis';
@@ -30,7 +31,9 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Campaigns from './pages/Campaigns';
 import LandingPage from './pages/LandingPage';
+import ClientManagement from './pages/ClientManagement';
 import { UserRole, User, SubscriptionPlan } from './types';
+import { getCurrentUser, clearUserSession } from './services/authService';
 
 // --- Notification Context ---
 interface NotificationContextType {
@@ -38,19 +41,6 @@ interface NotificationContextType {
 }
 
 export const NotificationContext = createContext<NotificationContextType>({ notify: () => {} });
-
-// --- Mock Current User for Demo ---
-const MOCK_USER: User = {
-  id: '1',
-  name: 'Alex Chen',
-  email: 'alex@thinkalm.com',
-  role: UserRole.ADMIN, 
-  team: 'Sales Alpha',
-  plan: SubscriptionPlan.PRO,
-  status: 'Active',
-  lastLogin: 'Just now',
-  avatarUrl: 'https://picsum.photos/100/100'
-};
 
 // --- Layout Components ---
 
@@ -72,7 +62,7 @@ const SidebarItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: 
   );
 };
 
-const Sidebar = ({ isOpen, toggle, onLogout }: { isOpen: boolean; toggle: () => void, onLogout: () => void }) => {
+const Sidebar = ({ isOpen, toggle, onLogout, currentUser }: { isOpen: boolean; toggle: () => void, onLogout: () => void, currentUser: User | null }) => {
   return (
     <>
       {/* Mobile Overlay */}
@@ -93,7 +83,7 @@ const Sidebar = ({ isOpen, toggle, onLogout }: { isOpen: boolean; toggle: () => 
               </div>
               <div>
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                  Think ALM
+                  Think ABC
                 </span>
                 <span className="block text-[10px] text-brand-300 tracking-wider font-semibold">AI SALES OS</span>
               </div>
@@ -119,6 +109,9 @@ const Sidebar = ({ isOpen, toggle, onLogout }: { isOpen: boolean; toggle: () => 
             <div className="px-4 mt-8 mb-3 text-[10px] font-bold text-brand-400/80 uppercase tracking-widest">
               System
             </div>
+            {currentUser?.role === UserRole.SUPER_ADMIN && (
+              <SidebarItem to="/clients" icon={Building} label="Client Management" />
+            )}
             <SidebarItem to="/admin" icon={Users} label="User Access" />
             <SidebarItem to="/settings" icon={SettingsIcon} label="Configuration" />
           </div>
@@ -219,21 +212,31 @@ const Toast = ({ message, type, onClose }: { message: string, type: string, onCl
 
 const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null); // Start null to show Landing Page
-  const [view, setView] = useState<'landing' | 'login' | 'app'>('landing'); // 'landing', 'login', 'app'
+  const [user, setUser] = useState<User | null>(null);
+  const [view, setView] = useState<'landing' | 'login' | 'app'>('landing');
   const [notification, setNotification] = useState<{msg: string, type: string} | null>(null);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const savedUser = getCurrentUser();
+    if (savedUser) {
+      setUser(savedUser);
+      setView('app');
+    }
+  }, []);
 
   const notify = (msg: string, type: 'info' | 'success' | 'error' = 'info') => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleLogin = () => {
-    setUser(MOCK_USER);
+  const handleLogin = (authenticatedUser: User) => {
+    setUser(authenticatedUser);
     setView('app');
   };
 
   const handleLogout = () => {
+    clearUserSession();
     setUser(null);
     setView('landing');
   };
@@ -260,7 +263,7 @@ const App: React.FC = () => {
             />
           )}
           
-          <Sidebar isOpen={isSidebarOpen} toggle={() => setSidebarOpen(false)} onLogout={handleLogout} />
+          <Sidebar isOpen={isSidebarOpen} toggle={() => setSidebarOpen(false)} onLogout={handleLogout} currentUser={user} />
           <Header onMenuClick={() => setSidebarOpen(true)} user={user} />
 
           {/* Demo Mode Badge */}
@@ -295,6 +298,7 @@ const App: React.FC = () => {
                <Route path="/team" element={<TeamPerformance />} />
                <Route path="/campaigns" element={<Campaigns />} />
                <Route path="/ai-agents" element={<AIAgentConfig currentUser={user!} />} />
+               <Route path="/clients" element={<ClientManagement currentUser={user!} />} />
                <Route path="/admin" element={<AdminUsers />} />
                <Route path="/settings" element={<Settings />} />
                <Route path="*" element={<Navigate to="/" replace />} />
