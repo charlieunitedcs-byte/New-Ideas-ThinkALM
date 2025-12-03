@@ -1,6 +1,6 @@
 
 import React, { useContext, useState } from 'react';
-import { FileText, PlayCircle, Download, Lock, Search, UploadCloud, Users, Globe, X, Plus } from 'lucide-react';
+import { FileText, PlayCircle, Download, Lock, Search, UploadCloud, Users, Globe, X, Plus, Eye } from 'lucide-react';
 import { TrainingMaterial, UserRole, User } from '../types';
 import { NotificationContext } from '../App';
 
@@ -29,6 +29,10 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   const [uploadType, setUploadType] = useState<'PDF' | 'VIDEO'>('PDF');
   const [uploadCategory, setUploadCategory] = useState('General');
   const [uploadVisibility, setUploadVisibility] = useState<'GLOBAL' | 'TEAM'>('TEAM');
+
+  // Viewer Modal State
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewingMaterial, setViewingMaterial] = useState<TrainingMaterial | null>(null);
 
   // Filter Logic: Show GLOBAL items + TEAM items matching current user's team
   const filteredMaterials = materials.filter(item => {
@@ -60,6 +64,28 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
       setUploadTitle('');
       notify("Training material uploaded successfully!", "success");
   };
+
+  const handleViewMaterial = (material: TrainingMaterial) => {
+    setViewingMaterial(material);
+    setViewerOpen(true);
+  };
+
+  const handleDownloadMaterial = (material: TrainingMaterial) => {
+    // Simulate download by creating a dummy file
+    const blob = new Blob([`Training Material: ${material.title}\n\nType: ${material.type}\nCategory: ${material.category}\n\nThis is a demo download.`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${material.title}.${material.type === 'PDF' ? 'pdf' : 'mp4'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    notify(`Downloading ${material.title}...`, "success");
+  };
+
+  // Check if user has admin/super admin access
+  const hasFullAccess = currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN;
 
   return (
     <div className="space-y-8 animate-fade-in relative">
@@ -135,31 +161,43 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                     <span className="text-xs text-slate-500 font-medium">{item.date}</span>
                     <span className="text-[10px] text-slate-600">By {item.addedBy}</span>
                 </div>
-                <button 
-                  onClick={() => notify(`Downloading ${item.title}...`, "success")}
-                  className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-lg hover:bg-brand-600"
-                >
-                  <Download size={16} />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleViewMaterial(item)}
+                    className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-lg hover:bg-brand-600"
+                    title="View in app"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDownloadMaterial(item)}
+                    className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-lg hover:bg-brand-600"
+                    title="Download"
+                  >
+                    <Download size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ))}
-        
-        {/* Mock Locked Content */}
-        <div 
-          onClick={() => notify("Content locked. Upgrade to Pro Growth plan to access.", "error")}
-          className="glass-panel border border-slate-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
-        >
-            <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4 text-slate-500">
-                <Lock size={24} />
-            </div>
-            <h3 className="font-bold text-slate-300 text-lg">Advanced Masterclass</h3>
-            <p className="text-sm text-slate-500 mt-2 mb-6">Upgrade to Pro Growth to unlock exclusive strategies.</p>
-            <button className="px-6 py-2 bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-700 transition-colors">
-                View Plans
-            </button>
-        </div>
+
+        {/* Mock Locked Content - Only show for non-admin users */}
+        {!hasFullAccess && (
+          <div
+            onClick={() => notify("Content locked. Upgrade to Pro Growth plan to access.", "error")}
+            className="glass-panel border border-slate-800/50 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+          >
+              <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4 text-slate-500">
+                  <Lock size={24} />
+              </div>
+              <h3 className="font-bold text-slate-300 text-lg">Advanced Masterclass</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6">Upgrade to Pro Growth to unlock exclusive strategies.</p>
+              <button className="px-6 py-2 bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-700 transition-colors">
+                  View Plans
+              </button>
+          </div>
+        )}
       </div>
 
       {/* Upload Modal */}
@@ -258,6 +296,86 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                   </form>
               </div>
           </div>
+      )}
+
+      {/* Material Viewer Modal */}
+      {viewerOpen && viewingMaterial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="glass-panel bg-slate-950 border border-slate-800 w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl relative flex flex-col">
+            <div className="p-6 border-b border-slate-800/50 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">{viewingMaterial.title}</h2>
+                <p className="text-sm text-slate-400 mt-1">{viewingMaterial.category} • {viewingMaterial.type}</p>
+              </div>
+              <button
+                onClick={() => setViewerOpen(false)}
+                className="text-slate-500 hover:text-white transition-colors p-2"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6">
+              {viewingMaterial.type === 'PDF' ? (
+                <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
+                  <FileText size={64} className="text-brand-400 mb-6" />
+                  <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
+                  <p className="text-slate-400 text-center max-w-md mb-6">
+                    This is a demo PDF viewer. In production, this would display the actual PDF content using a PDF viewer library like react-pdf or pdf.js.
+                  </p>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
+                    <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Document Preview</h4>
+                    <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
+                      <p>📄 <strong>Topic:</strong> {viewingMaterial.category}</p>
+                      <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
+                      <p>👤 <strong>Author:</strong> {viewingMaterial.addedBy}</p>
+                      <p className="pt-4 border-t border-slate-800">
+                        This training material contains valuable insights and strategies for improving your sales performance.
+                        In a real application, the full PDF would be rendered here with interactive features.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
+                  <PlayCircle size={64} className="text-brand-400 mb-6" />
+                  <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
+                  <p className="text-slate-400 text-center max-w-md mb-6">
+                    This is a demo video viewer. In production, this would display the actual video using an HTML5 video player or embedded service like YouTube/Vimeo.
+                  </p>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
+                    <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Video Preview</h4>
+                    <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
+                      <p>🎥 <strong>Topic:</strong> {viewingMaterial.category}</p>
+                      <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
+                      <p>👤 <strong>Instructor:</strong> {viewingMaterial.addedBy}</p>
+                      <p className="pt-4 border-t border-slate-800">
+                        This training video covers essential techniques and best practices.
+                        In a real application, the video player would be embedded here with controls for play, pause, and seeking.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-800/50 flex gap-3">
+              <button
+                onClick={() => handleDownloadMaterial(viewingMaterial)}
+                className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2"
+              >
+                <Download size={18} />
+                Download
+              </button>
+              <button
+                onClick={() => setViewerOpen(false)}
+                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

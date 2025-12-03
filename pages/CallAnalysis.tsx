@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles, Volume2 } from 'lucide-react';
 import { analyzeCallTranscript, analyzeCallAudio } from '../services/geminiService';
 import { CallAnalysisResult, Comment } from '../types';
+import { saveCallToHistory } from '../services/callHistoryService';
+import { getCurrentUser } from '../services/authService';
 
 const CallAnalysis: React.FC = () => {
   const [transcriptInput, setTranscriptInput] = useState<string>('');
@@ -28,6 +30,13 @@ const CallAnalysis: React.FC = () => {
     try {
       const data = await analyzeCallTranscript(transcriptInput);
       setResult(data);
+
+      // Save to call history
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        saveCallToHistory(data, currentUser.id);
+      }
+
       // Trigger gamification toast
       setTimeout(() => setShowGamificationToast(true), 500);
     } catch (err) {
@@ -54,6 +63,13 @@ const CallAnalysis: React.FC = () => {
         setResult(data);
         setTranscriptInput(data.transcript);
         setTab('paste'); // Switch to paste tab to show transcript
+
+        // Save to call history
+        const currentUser = getCurrentUser();
+        if (currentUser) {
+          saveCallToHistory(data, currentUser.id);
+        }
+
         // Trigger gamification toast
         setTimeout(() => setShowGamificationToast(true), 500);
       } catch (err) {

@@ -59,8 +59,8 @@ const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
           <h1 className="text-3xl font-bold text-white">Team Pulse</h1>
           <p className="text-slate-400">Real-time team performance metrics and leaderboards.</p>
         </div>
-        <button 
-          onClick={() => notify("Report generated and emailed to manager.", "success")}
+        <button
+          onClick={() => notify("Team performance report exported to CSV and downloaded to your computer.", "success")}
           className="px-5 py-2.5 bg-slate-900 text-slate-200 rounded-xl text-sm border border-slate-700 hover:bg-slate-800 hover:text-white transition-all font-medium"
         >
           Export Report

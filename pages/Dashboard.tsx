@@ -1,17 +1,19 @@
 
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { ArrowUpRight, CheckCircle2, Mic, Users, Clock, Zap } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Mic, Users, Clock, Zap, Phone, Trash2, Eye } from 'lucide-react';
 import { NotificationContext } from '../App';
+import { getCallHistory, deleteCallFromHistory, CallHistoryItem } from '../services/callHistoryService';
+import { getCurrentUser } from '../services/authService';
 
 const mockActivityData = [
   { name: 'Mon', calls: 12, score: 78 },
@@ -52,6 +54,24 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
   const { notify } = useContext(NotificationContext);
   const navigate = useNavigate();
+  const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
+  const [selectedCall, setSelectedCall] = useState<CallHistoryItem | null>(null);
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      const history = getCallHistory(currentUser.id);
+      setCallHistory(history);
+    }
+  }, []);
+
+  const handleDeleteCall = (callId: string) => {
+    if (confirm("Are you sure you want to delete this call analysis?")) {
+      deleteCallFromHistory(callId);
+      setCallHistory(prev => prev.filter(c => c.id !== callId));
+      notify("Call analysis deleted", "success");
+    }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -201,6 +221,131 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
           </div>
         </div>
       )}
+
+      {/* Call History Section */}
+      <div className="glass-panel border border-slate-800/50 rounded-2xl p-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+              <Phone size={24} className="text-brand-400" />
+              Recent Call Analysis
+            </h2>
+            <p className="text-slate-400 text-sm">View and manage your analyzed calls</p>
+          </div>
+          <button
+            onClick={() => navigate('/calls')}
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-brand-500/25 transition-all"
+          >
+            Analyze New Call
+          </button>
+        </div>
+
+        {callHistory.length === 0 ? (
+          <div className="text-center py-16 bg-slate-900/30 rounded-xl border border-dashed border-slate-800">
+            <Phone size={48} className="text-slate-700 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-400 mb-2">No Calls Analyzed Yet</h3>
+            <p className="text-slate-500 mb-6">Start analyzing your sales calls to see insights here</p>
+            <button
+              onClick={() => navigate('/calls')}
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium shadow-lg shadow-brand-500/25 transition-all"
+            >
+              Analyze Your First Call
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {callHistory.slice(0, 10).map((call) => (
+              <div
+                key={call.id}
+                className="p-5 bg-slate-900/40 border border-slate-800 rounded-xl hover:border-brand-500/50 transition-all group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold text-white ${
+                        call.score >= 80 ? 'bg-emerald-500/20 text-emerald-400' :
+                        call.score >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {call.score}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-400">
+                          {new Date(call.analyzedAt).toLocaleDateString()} at {new Date(call.analyzedAt).toLocaleTimeString()}
+                        </p>
+                        <p className="text-white font-medium mt-1 line-clamp-1">{call.summary}</p>
+                      </div>
+                    </div>
+
+                    {selectedCall?.id === call.id && (
+                      <div className="mt-4 pt-4 border-t border-slate-800 animate-fade-in">
+                        <div className="grid md:grid-cols-2 gap-6 mb-4">
+                          <div>
+                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Strengths</h4>
+                            <ul className="space-y-2">
+                              {call.strengths.map((s, i) => (
+                                <li key={i} className="text-sm text-slate-300 flex gap-2">
+                                  <span className="text-emerald-500">•</span> {s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-accent-400 uppercase tracking-wider mb-2">Areas for Improvement</h4>
+                            <ul className="space-y-2">
+                              {call.improvements.map((s, i) => (
+                                <li key={i} className="text-sm text-slate-300 flex gap-2">
+                                  <span className="text-accent-500">•</span> {s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                            <p className="text-xs text-slate-500 mb-1">Tone</p>
+                            <p className="text-white font-medium capitalize">{call.tone}</p>
+                          </div>
+                          <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                            <p className="text-xs text-slate-500 mb-1">Emotional Intelligence</p>
+                            <p className="text-white font-medium">{call.emotionalIntelligence}/100</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => setSelectedCall(selectedCall?.id === call.id ? null : call)}
+                      className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                      title={selectedCall?.id === call.id ? "Hide details" : "View details"}
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCall(call.id)}
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-950/50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Delete call"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {callHistory.length > 10 && (
+              <button
+                onClick={() => navigate('/calls')}
+                className="w-full py-3 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                View all {callHistory.length} calls →
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
