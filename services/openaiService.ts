@@ -3,9 +3,10 @@ import { CallAnalysisResult } from '../types';
 
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
 
-// Initialize OpenAI client
+// Initialize OpenAI client - supports both OpenAI and OpenRouter
 const openai = new OpenAI({
   apiKey: apiKey,
+  baseURL: apiKey.startsWith('sk-or-') ? 'https://openrouter.ai/api/v1' : undefined,
   dangerouslyAllowBrowser: true // For demo purposes - in production, use server-side API
 });
 
@@ -16,7 +17,7 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: apiKey.startsWith('sk-or-') ? "openai/gpt-4-turbo" : "gpt-4-turbo-preview",
       messages: [
         {
           role: "system",
@@ -58,6 +59,11 @@ ${transcript}`
 export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisResult> => {
   if (!apiKey) {
     throw new Error("OpenAI API Key is missing. Please set VITE_OPENAI_API_KEY in your .env file.");
+  }
+
+  // Check if using OpenRouter (doesn't support Whisper API)
+  if (apiKey.startsWith('sk-or-')) {
+    throw new Error("Audio transcription requires a direct OpenAI API key. OpenRouter doesn't support the Whisper API. Please use the 'Paste Transcript' tab instead, or get an OpenAI API key from platform.openai.com.");
   }
 
   try {
