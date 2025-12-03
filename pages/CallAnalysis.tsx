@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles, Volume2 } from 'lucide-react';
-import { analyzeCallTranscript, analyzeCallAudio } from '../services/geminiService';
+import { analyzeCallTranscript, analyzeCallAudio } from '../services/aiService';
 import { CallAnalysisResult, Comment } from '../types';
 import { saveCallToHistory } from '../services/callHistoryService';
 import { getCurrentUser } from '../services/authService';

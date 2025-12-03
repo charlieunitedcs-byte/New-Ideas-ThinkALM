@@ -1,6 +1,6 @@
 
 import React, { useContext, useState } from 'react';
-import { FileText, PlayCircle, Download, Lock, Search, UploadCloud, Users, Globe, X, Plus, Eye } from 'lucide-react';
+import { FileText, PlayCircle, Download, Lock, Search, UploadCloud, Users, Globe, X, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { TrainingMaterial, UserRole, User } from '../types';
 import { NotificationContext } from '../App';
 
@@ -29,6 +29,14 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   const [uploadType, setUploadType] = useState<'PDF' | 'VIDEO'>('PDF');
   const [uploadCategory, setUploadCategory] = useState('General');
   const [uploadVisibility, setUploadVisibility] = useState<'GLOBAL' | 'TEAM'>('TEAM');
+
+  // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<TrainingMaterial | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editType, setEditType] = useState<'PDF' | 'VIDEO'>('PDF');
+  const [editCategory, setEditCategory] = useState('General');
+  const [editVisibility, setEditVisibility] = useState<'GLOBAL' | 'TEAM'>('TEAM');
 
   // Viewer Modal State
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -86,6 +94,45 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
 
   // Check if user has admin/super admin access
   const hasFullAccess = currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN;
+
+  const handleEditMaterial = (material: TrainingMaterial) => {
+    setEditingMaterial(material);
+    setEditTitle(material.title);
+    setEditType(material.type);
+    setEditCategory(material.category);
+    setEditVisibility(material.visibility);
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMaterial) return;
+
+    const updatedMaterials = materials.map(m =>
+      m.id === editingMaterial.id
+        ? {
+            ...m,
+            title: editTitle,
+            type: editType,
+            category: editCategory,
+            visibility: editVisibility,
+            teamId: editVisibility === 'TEAM' ? currentUser.team : undefined
+          }
+        : m
+    );
+
+    setMaterials(updatedMaterials);
+    setIsEditOpen(false);
+    setEditingMaterial(null);
+    notify("Training material updated successfully!", "success");
+  };
+
+  const handleDeleteMaterial = (materialId: string) => {
+    if (confirm("Are you sure you want to delete this training material?")) {
+      setMaterials(materials.filter(m => m.id !== materialId));
+      notify("Training material deleted", "success");
+    }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in relative">
@@ -176,6 +223,24 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                   >
                     <Download size={16} />
                   </button>
+                  {hasFullAccess && (
+                    <>
+                      <button
+                        onClick={() => handleEditMaterial(item)}
+                        className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-2 rounded-lg hover:bg-blue-600 opacity-0 group-hover:opacity-100"
+                        title="Edit material"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMaterial(item.id)}
+                        className="text-slate-400 hover:text-red-400 transition-colors bg-slate-800 p-2 rounded-lg hover:bg-red-950/50 opacity-0 group-hover:opacity-100"
+                        title="Delete material"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -291,6 +356,113 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                             className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-brand-500/20"
                           >
                               Upload Material
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* Edit Material Modal */}
+      {isEditOpen && editingMaterial && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+              <div className="glass-panel bg-slate-950 border border-slate-800 w-full max-w-lg rounded-2xl p-8 shadow-2xl relative">
+                  <button
+                    onClick={() => setIsEditOpen(false)}
+                    className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+                  >
+                      <X size={20} />
+                  </button>
+
+                  <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-500">
+                          <Edit size={20} />
+                      </div>
+                      <h2 className="text-xl font-bold text-white">Edit Material</h2>
+                  </div>
+
+                  <form onSubmit={handleSaveEdit} className="space-y-4">
+                      <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Title</label>
+                          <input
+                            required
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="e.g. Q4 Sales Playbook"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-500"
+                          />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+                            <select
+                                value={editType}
+                                onChange={(e) => setEditType(e.target.value as 'PDF' | 'VIDEO')}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-500"
+                            >
+                                <option value="PDF">PDF Document</option>
+                                <option value="VIDEO">Video Recording</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                            <select
+                                value={editCategory}
+                                onChange={(e) => setEditCategory(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-500"
+                            >
+                                <option value="General">General</option>
+                                <option value="Prospecting">Prospecting</option>
+                                <option value="Closing">Closing</option>
+                                <option value="Strategy">Strategy</option>
+                                <option value="Product Knowledge">Product Knowledge</option>
+                                <option value="Objection Handling">Objection Handling</option>
+                            </select>
+                          </div>
+                      </div>
+
+                      <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Visibility Scope</label>
+                          <div className="grid grid-cols-2 gap-4">
+                              <button
+                                type="button"
+                                onClick={() => setEditVisibility('TEAM')}
+                                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${editVisibility === 'TEAM' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
+                              >
+                                  <Users size={20} />
+                                  <span className="text-xs font-bold">My Team Only</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditVisibility('GLOBAL')}
+                                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${editVisibility === 'GLOBAL' ? 'bg-brand-600/20 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600'}`}
+                              >
+                                  <Globe size={20} />
+                                  <span className="text-xs font-bold">Everyone (Global)</span>
+                              </button>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-2 text-center">
+                              {editVisibility === 'TEAM'
+                                ? `Visible only to members of ${currentUser.team}`
+                                : 'Visible to all users in the organization'}
+                          </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-800/50 flex gap-3">
+                          <button
+                            type="submit"
+                            className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-brand-500/20"
+                          >
+                              Save Changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditOpen(false)}
+                            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-xl transition-colors"
+                          >
+                              Cancel
                           </button>
                       </div>
                   </form>
