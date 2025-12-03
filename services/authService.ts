@@ -40,7 +40,7 @@ export const authenticateUser = (email: string, password: string): User | null =
   return null;
 };
 
-export const isAuth = ():</s> boolean => {
+export const isAuth = (): boolean => {
   return localStorage.getItem('think-abc-auth-user') !== null;
 };
 
