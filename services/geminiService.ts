@@ -22,6 +22,8 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
     2. A brief executive summary (max 2 sentences).
     3. Top 3 strengths.
     4. Top 3 areas for improvement.
+    5. Tone analysis - analyze the sales rep's tone (e.g., confident, hesitant, enthusiastic, pushy, professional, etc.)
+    6. Emotional intelligence score (0-100) - how well did the rep read and respond to the prospect's emotions?
 
     Transcript:
     "${transcript}"
@@ -40,8 +42,10 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
             summary: { type: Type.STRING },
             strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
             improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+            tone: { type: Type.STRING },
+            emotionalIntelligence: { type: Type.NUMBER },
           },
-          required: ["score", "summary", "strengths", "improvements"],
+          required: ["score", "summary", "strengths", "improvements", "tone", "emotionalIntelligence"],
         },
       },
     });

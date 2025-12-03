@@ -239,6 +239,45 @@ const CallAnalysis: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Tone & Emotional Intelligence */}
+                    <div className="mt-10 pt-8 border-t border-slate-800/50">
+                        <h3 className="flex items-center gap-2 text-brand-400 font-bold mb-6 tracking-wide uppercase text-sm">
+                            <Volume2 size={18} /> Tone & Emotional Intelligence Analysis
+                        </h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <div className="p-5 bg-brand-900/20 rounded-xl border border-brand-500/20">
+                                    <p className="text-xs text-slate-400 mb-2 uppercase tracking-wider font-bold">Sales Rep Tone</p>
+                                    <p className="text-lg text-white font-semibold capitalize">{result.tone}</p>
+                                    <p className="text-xs text-slate-500 mt-2">Overall communication style and demeanor</p>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="p-5 bg-slate-900/50 rounded-xl border border-slate-800">
+                                    <p className="text-xs text-slate-400 mb-3 uppercase tracking-wider font-bold">Emotional Intelligence Score</p>
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="flex-1 h-3 bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all ${
+                                                    result.emotionalIntelligence >= 75 ? 'bg-emerald-500' :
+                                                    result.emotionalIntelligence >= 50 ? 'bg-amber-500' :
+                                                    'bg-red-500'
+                                                }`}
+                                                style={{ width: `${result.emotionalIntelligence}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-2xl font-bold text-white min-w-[3rem]">{result.emotionalIntelligence}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                        {result.emotionalIntelligence >= 75 ? '✨ Excellent ability to read and respond to prospect emotions' :
+                                         result.emotionalIntelligence >= 50 ? '⚡ Good emotional awareness with room for growth' :
+                                         '📚 Needs development in reading emotional cues'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="mt-10 pt-8 border-t border-slate-800/50">
                         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                              Recommended Training <span className="text-xs font-normal text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">AI Curated</span>

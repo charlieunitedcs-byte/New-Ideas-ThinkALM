@@ -45,7 +45,7 @@ const AIAgentConfig: React.FC<AIAgentConfigProps> = ({ currentUser }) => {
   };
 
   // --- Access Control Check ---
-  if (currentUser.role !== UserRole.ADMIN) {
+  if (currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.SUPER_ADMIN) {
       return (
           <div className="h-[calc(100vh-10rem)] flex flex-col items-center justify-center animate-fade-in">
               <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center mb-6 border border-slate-800 shadow-xl shadow-black/50">
@@ -53,7 +53,7 @@ const AIAgentConfig: React.FC<AIAgentConfigProps> = ({ currentUser }) => {
               </div>
               <h1 className="text-3xl font-bold text-white mb-3">Restricted Access</h1>
               <p className="text-slate-400 max-w-md text-center mb-8">
-                  The AI Agent Builder is a powerful tool reserved for organization administrators. 
+                  The AI Agent Builder is a powerful tool reserved for organization administrators.
                   Please contact your workspace admin to request changes to agent personas.
               </p>
               <button className="px-6 py-3 bg-slate-800 text-white rounded-xl border border-slate-700 text-sm font-medium hover:bg-slate-700 transition-colors">

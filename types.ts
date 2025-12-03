@@ -33,6 +33,8 @@ export interface CallAnalysisResult {
   summary: string;
   strengths: string[];
   improvements: string[];
+  tone: string;
+  emotionalIntelligence: number;
   transcript: string;
 }
 
