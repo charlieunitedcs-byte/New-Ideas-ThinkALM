@@ -45,7 +45,11 @@ const LeaderboardItem = ({ rank, name, score, trend }: any) => (
   </div>
 );
 
-const TeamPerformance: React.FC = () => {
+interface TeamPerformanceProps {
+  demoMode: boolean;
+}
+
+const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
   const { notify } = useContext(NotificationContext);
 
   return (

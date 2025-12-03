@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles } from 'lucide-react';
-import { analyzeCallTranscript, analyzeCallAudio } from '../services/openaiService';
+import { UploadCloud, FileText, Check, AlertCircle, Loader2, Share2, MessageSquare, Send, Trophy, Sparkles, Volume2 } from 'lucide-react';
+import { analyzeCallTranscript, analyzeCallAudio } from '../services/geminiService';
 import { CallAnalysisResult, Comment } from '../types';
 
 const CallAnalysis: React.FC = () => {

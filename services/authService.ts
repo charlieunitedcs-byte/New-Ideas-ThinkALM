@@ -67,3 +67,46 @@ export const clearUserSession = (): void => {
 export const isSuperAdmin = (user: User | null): boolean => {
   return user?.role === UserRole.SUPER_ADMIN;
 };
+
+// Update user email with password verification
+export const updateUserEmail = (newEmail: string, currentPassword: string): { success: boolean; message: string; user?: User } => {
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    return { success: false, message: 'No user session found' };
+  }
+
+  // Verify current password (in production, this would be a backend call)
+  const authenticatedUser = authenticateUser(currentUser.email, currentPassword);
+  if (!authenticatedUser) {
+    return { success: false, message: 'Current password is incorrect' };
+  }
+
+  // Update email
+  const updatedUser: User = {
+    ...currentUser,
+    email: newEmail
+  };
+
+  saveUserSession(updatedUser);
+  return { success: true, message: 'Email updated successfully', user: updatedUser };
+};
+
+// Update user password with current password verification
+export const updateUserPassword = (currentPassword: string, newPassword: string): { success: boolean; message: string } => {
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    return { success: false, message: 'No user session found' };
+  }
+
+  // Verify current password (in production, this would be a backend call)
+  const authenticatedUser = authenticateUser(currentUser.email, currentPassword);
+  if (!authenticatedUser) {
+    return { success: false, message: 'Current password is incorrect' };
+  }
+
+  // In a real application, you would hash the password and send it to the backend
+  // For this demo, we'll just show a success message
+  // The password is not stored in localStorage for security reasons
+
+  return { success: true, message: 'Password updated successfully' };
+};

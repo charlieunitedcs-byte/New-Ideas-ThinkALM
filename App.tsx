@@ -134,11 +134,12 @@ const Sidebar = ({ isOpen, toggle, onLogout, currentUser }: { isOpen: boolean; t
 
 const Header = ({ onMenuClick, user }: { onMenuClick: () => void, user: any }) => {
   const { notify } = useContext(NotificationContext);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
     <header className="sticky top-0 z-10 glass-panel border-b border-slate-800/50 h-20 px-4 lg:px-8 flex items-center justify-between lg:pl-72 transition-all">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={onMenuClick}
           className="lg:hidden p-2 text-slate-400 hover:bg-slate-800 rounded-md"
         >
@@ -146,9 +147,9 @@ const Header = ({ onMenuClick, user }: { onMenuClick: () => void, user: any }) =
         </button>
         <div className="hidden md:flex items-center relative group">
           <Search className="absolute left-3 text-slate-500 group-focus-within:text-brand-400 transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search analysis, calls, users..." 
+          <input
+            type="text"
+            placeholder="Search analysis, calls, users..."
             className="bg-slate-900/50 border border-slate-800/50 text-sm rounded-full pl-10 pr-4 py-2.5 w-72 text-slate-200 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none placeholder:text-slate-600 transition-all"
             onKeyDown={(e) => {
               if (e.key === 'Enter') notify("Search functionality is simulated in this demo.");
@@ -168,26 +169,57 @@ const Header = ({ onMenuClick, user }: { onMenuClick: () => void, user: any }) =
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => notify("You have 3 unread notifications from the System.")}
           className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors relative"
         >
           <Bell size={20} />
           <span className="absolute top-2 right-2.5 w-2 h-2 bg-accent-500 rounded-full shadow-[0_0_8px_#f97316]"></span>
         </button>
-        <div className="flex items-center gap-3 border-l border-slate-800 pl-6">
+        <div className="flex items-center gap-3 border-l border-slate-800 pl-6 relative">
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold text-slate-200">{user.name}</p>
             <p className="text-xs text-brand-400 font-medium">{user.role}</p>
           </div>
-          <div className="relative">
-            <img 
-              src={user.avatarUrl} 
-              alt="User" 
-              className="w-10 h-10 rounded-full border-2 border-slate-800 ring-2 ring-brand-900"
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="relative group"
+          >
+            <img
+              src={user.avatarUrl}
+              alt="User"
+              className="w-10 h-10 rounded-full border-2 border-slate-800 ring-2 ring-brand-900 cursor-pointer hover:ring-brand-600 transition-all"
             />
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></div>
-          </div>
+          </button>
+
+          {/* Profile Dropdown */}
+          {showProfileMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-20"
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className="absolute top-full right-0 mt-2 w-64 glass-panel border border-slate-800/50 rounded-xl shadow-2xl z-30 overflow-hidden animate-fade-in">
+                <div className="p-4 border-b border-slate-800/50 bg-slate-900/50">
+                  <p className="text-sm font-bold text-white">{user.name}</p>
+                  <p className="text-xs text-slate-400 mt-1">{user.email}</p>
+                </div>
+                <div className="py-2">
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      window.location.hash = '#/settings';
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-800/50 hover:text-white transition-colors flex items-center gap-3"
+                  >
+                    <SettingsIcon size={16} />
+                    Account Settings
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -307,17 +339,17 @@ const App: React.FC = () => {
 
           <main className="lg:pl-64 pt-4 pb-12 px-4 lg:px-8 max-w-[1600px] mx-auto transition-all duration-300">
              <Routes>
-               <Route path="/" element={<Dashboard />} />
+               <Route path="/" element={<Dashboard demoMode={demoMode} />} />
                <Route path="/calls" element={<CallAnalysis />} />
                <Route path="/roleplay" element={<Roleplay />} />
                {/* Pass currentUser to TrainingLibrary for upload permissions */}
                <Route path="/training" element={<TrainingLibrary currentUser={user!} />} />
-               <Route path="/team" element={<TeamPerformance />} />
+               <Route path="/team" element={<TeamPerformance demoMode={demoMode} />} />
                <Route path="/campaigns" element={<Campaigns />} />
                <Route path="/ai-agents" element={<AIAgentConfig currentUser={user!} />} />
                <Route path="/clients" element={<ClientManagement currentUser={user!} />} />
                <Route path="/admin" element={<AdminUsers />} />
-               <Route path="/settings" element={<Settings demoMode={demoMode} onToggleDemoMode={toggleDemoMode} />} />
+               <Route path="/settings" element={<Settings demoMode={demoMode} onToggleDemoMode={toggleDemoMode} currentUser={user} onUserUpdate={setUser} />} />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>
           </main>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Award, Zap, Briefcase, Lock, CheckCircle2, Cloud, ChevronRight, Star, Settings as SettingsIcon } from 'lucide-react';
-import { Badge } from '../types';
+import { Award, Zap, Briefcase, Lock, CheckCircle2, Cloud, ChevronRight, Star, Settings as SettingsIcon, Mail, Key } from 'lucide-react';
+import { Badge, User } from '../types';
+import { updateUserEmail, updateUserPassword } from '../services/authService';
 
 const mockBadges: Badge[] = [
     { id: '1', name: 'First Call', description: 'Analyzed your first sales call', icon: '📞', achievedDate: '2023-09-01' },
@@ -12,11 +13,71 @@ const mockBadges: Badge[] = [
 interface SettingsProps {
     demoMode: boolean;
     onToggleDemoMode: (enabled: boolean) => void;
+    currentUser: User | null;
+    onUserUpdate: (user: User) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode }) => {
+const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, currentUser, onUserUpdate }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [crmConnected, setCrmConnected] = useState(false);
+
+    // Account Settings State
+    const [newEmail, setNewEmail] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [accountMessage, setAccountMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+    const handleEmailChange = () => {
+        if (!newEmail.trim() || !currentPassword.trim()) {
+            setAccountMessage({ type: 'error', text: 'Please fill in all fields' });
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+            setAccountMessage({ type: 'error', text: 'Please enter a valid email address' });
+            return;
+        }
+
+        const result = updateUserEmail(newEmail, currentPassword);
+        if (result.success && result.user) {
+            onUserUpdate(result.user);
+            setAccountMessage({ type: 'success', text: 'Email updated successfully!' });
+            setNewEmail('');
+            setCurrentPassword('');
+        } else {
+            setAccountMessage({ type: 'error', text: result.message });
+        }
+        setTimeout(() => setAccountMessage(null), 3000);
+    };
+
+    const handlePasswordChange = () => {
+        if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+            setAccountMessage({ type: 'error', text: 'Please fill in all fields' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setAccountMessage({ type: 'error', text: 'New passwords do not match' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setAccountMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+            return;
+        }
+
+        const result = updateUserPassword(currentPassword, newPassword);
+        if (result.success) {
+            setAccountMessage({ type: 'success', text: 'Password updated successfully!' });
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } else {
+            setAccountMessage({ type: 'error', text: result.message });
+        }
+        setTimeout(() => setAccountMessage(null), 3000);
+    };
 
     return (
         <div className="max-w-5xl mx-auto animate-fade-in">
@@ -151,15 +212,118 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode }) => {
                     )}
 
                     {activeTab === 'account' && (
-                        <div className="glass-panel border border-slate-800/50 rounded-2xl p-8 flex flex-col items-center justify-center text-center py-16 animate-fade-in">
-                            <div className="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                                <Lock size={40} className="text-slate-600" />
+                        <div className="glass-panel border border-slate-800/50 rounded-2xl p-8 animate-fade-in space-y-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-white mb-2">Account Settings</h2>
+                                <p className="text-slate-400 text-sm">Manage your email and password securely.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Account Security</h3>
-                            <p className="text-slate-400 max-w-sm mb-8">Manage your password, email preferences, and subscription plan details securely.</p>
-                            <button className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors font-medium border border-slate-700 hover:border-slate-500">
-                                Edit Profile Settings
-                            </button>
+
+                            {accountMessage && (
+                                <div className={`p-4 rounded-xl border ${
+                                    accountMessage.type === 'success'
+                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                                }`}>
+                                    {accountMessage.text}
+                                </div>
+                            )}
+
+                            {/* Current User Info */}
+                            <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-800">
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Current Account</h3>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Mail size={16} className="text-slate-500" />
+                                        <span className="text-white font-medium">{currentUser?.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-slate-500">Name:</span>
+                                        <span className="text-white">{currentUser?.name}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Change Email */}
+                            <div className="p-6 bg-slate-900/30 rounded-xl border border-slate-800">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <Mail size={20} className="text-brand-400" />
+                                    Change Email Address
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">New Email Address</label>
+                                        <input
+                                            type="email"
+                                            value={newEmail}
+                                            onChange={(e) => setNewEmail(e.target.value)}
+                                            placeholder="Enter new email"
+                                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Current Password (for verification)</label>
+                                        <input
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            placeholder="Enter current password"
+                                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleEmailChange}
+                                        className="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-medium transition-colors"
+                                    >
+                                        Update Email
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Change Password */}
+                            <div className="p-6 bg-slate-900/30 rounded-xl border border-slate-800">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <Key size={20} className="text-brand-400" />
+                                    Change Password
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Current Password</label>
+                                        <input
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            placeholder="Enter current password"
+                                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">New Password</label>
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="Enter new password (min 6 characters)"
+                                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">Confirm New Password</label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            placeholder="Confirm new password"
+                                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handlePasswordChange}
+                                        className="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-medium transition-colors"
+                                    >
+                                        Update Password
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
