@@ -21,7 +21,38 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
       })
     });
 
-    const data = await response.json();
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+
+      // Try to get error details
+      try {
+        const text = await response.text();
+        console.error('Backend response:', text);
+
+        // Try parsing as JSON first
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // Not JSON, use text directly
+          errorMessage = text.substring(0, 200); // First 200 chars
+        }
+      } catch {
+        // Can't read response
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Parse JSON response
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      throw new Error('Backend returned invalid response. Please try again or contact support.');
+    }
 
     if (!data.success) {
       throw new Error(data.error || 'Analysis failed');
@@ -41,7 +72,7 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
     console.error('❌ Call analysis failed:', error);
 
     // Provide helpful error message
-    if (error?.message?.includes('fetch')) {
+    if (error?.message?.includes('fetch') || error?.message?.includes('NetworkError')) {
       throw new Error(
         'Unable to connect to analysis service. Please check your internet connection and try again.'
       );
@@ -75,7 +106,35 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
       })
     });
 
-    const data = await response.json();
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+
+      try {
+        const text = await response.text();
+        console.error('Backend response:', text);
+
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = text.substring(0, 200);
+        }
+      } catch {
+        // Can't read response
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Parse JSON response
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      throw new Error('Backend returned invalid response. Please try again or contact support.');
+    }
 
     if (!data.success) {
       throw new Error(data.error || 'Audio analysis failed');

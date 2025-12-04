@@ -24,16 +24,30 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
     const { transcript, audioBase64, audioMimeType } = req.body as AnalyzeCallRequest;
 
     if (!transcript && !audioBase64) {
-      return res.status(400).json({ error: 'Either transcript or audio is required' });
+      return res.status(400).json({ success: false, error: 'Either transcript or audio is required' });
     }
 
     // Get API keys from environment
@@ -77,8 +91,9 @@ export default async function handler(
   } catch (error: any) {
     console.error('Call analysis error:', error);
     return res.status(500).json({
+      success: false,
       error: 'Failed to analyze call',
-      details: error.message
+      details: error.message || 'Unknown error occurred'
     });
   }
 }
