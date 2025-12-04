@@ -51,7 +51,10 @@ export interface TrainingMaterial {
   title: string;
   type: 'PDF' | 'VIDEO';
   category: string;
-  url: string; // Placeholder URL
+  url: string; // Base64 data or URL
+  fileName?: string; // Original filename
+  fileSize?: number; // File size in bytes
+  fileType?: string; // MIME type
   addedBy: string;
   date: string;
   visibility: 'GLOBAL' | 'TEAM'; // New field for access control

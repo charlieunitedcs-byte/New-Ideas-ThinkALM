@@ -1,5 +1,5 @@
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { FileText, PlayCircle, Download, Lock, Search, UploadCloud, Users, Globe, X, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { TrainingMaterial, UserRole, User } from '../types';
 import { NotificationContext } from '../App';
@@ -19,9 +19,26 @@ const mockMaterials: TrainingMaterial[] = [
 
 const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   const { notify } = useContext(NotificationContext);
-  const [materials, setMaterials] = useState<TrainingMaterial[]>(mockMaterials);
+  const [materials, setMaterials] = useState<TrainingMaterial[]>([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+
+  // Load materials from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('think-abc-training-materials');
+    if (stored) {
+      try {
+        const parsedMaterials = JSON.parse(stored);
+        setMaterials(parsedMaterials);
+      } catch {
+        // If parsing fails, use mock materials
+        setMaterials(mockMaterials);
+      }
+    } else {
+      // First time - load mock materials
+      setMaterials(mockMaterials);
+    }
+  }, []);
   
   // Upload Modal State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -29,6 +46,8 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   const [uploadType, setUploadType] = useState<'PDF' | 'VIDEO'>('PDF');
   const [uploadCategory, setUploadCategory] = useState('General');
   const [uploadVisibility, setUploadVisibility] = useState<'GLOBAL' | 'TEAM'>('TEAM');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Edit Modal State
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -52,25 +71,96 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
       return matchesSearch && matchesCategory && hasAccess;
   });
 
-  const handleUpload = (e: React.FormEvent) => {
+  // File upload handlers
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      // Auto-set title from filename if title is empty
+      if (!uploadTitle) {
+        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setUploadTitle(fileNameWithoutExt);
+      }
+      // Auto-detect type
+      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+        setUploadType('PDF');
+      } else if (file.type.includes('video') || file.name.match(/\.(mp4|mov|avi|wmv)$/i)) {
+        setUploadType('VIDEO');
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setUploadedFile(file);
+      // Auto-set title from filename if title is empty
+      if (!uploadTitle) {
+        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        setUploadTitle(fileNameWithoutExt);
+      }
+      // Auto-detect type
+      if (file.type.includes('pdf') || file.name.endsWith('.pdf')) {
+        setUploadType('PDF');
+      } else if (file.type.includes('video') || file.name.match(/\.(mp4|mov|avi|wmv)$/i)) {
+        setUploadType('VIDEO');
+      }
+    }
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
       e.preventDefault();
-      
-      const newMaterial: TrainingMaterial = {
-          id: Date.now().toString(),
-          title: uploadTitle,
-          type: uploadType,
-          category: uploadCategory,
-          url: '#',
-          addedBy: currentUser.name,
-          date: new Date().toISOString().split('T')[0],
-          visibility: uploadVisibility,
-          teamId: uploadVisibility === 'TEAM' ? currentUser.team : undefined
+
+      if (!uploadedFile) {
+        notify('Please select a file to upload', 'error');
+        return;
+      }
+
+      // Convert file to base64 for storage
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileData = reader.result as string;
+
+        const newMaterial: TrainingMaterial = {
+            id: Date.now().toString(),
+            title: uploadTitle,
+            type: uploadType,
+            category: uploadCategory,
+            url: fileData, // Store base64 data
+            fileName: uploadedFile.name,
+            fileSize: uploadedFile.size,
+            fileType: uploadedFile.type,
+            addedBy: currentUser.name,
+            date: new Date().toISOString().split('T')[0],
+            visibility: uploadVisibility,
+            teamId: uploadVisibility === 'TEAM' ? currentUser.team : undefined
+        };
+
+        // Save to localStorage
+        const updatedMaterials = [newMaterial, ...materials];
+        setMaterials(updatedMaterials);
+        localStorage.setItem('think-abc-training-materials', JSON.stringify(updatedMaterials));
+
+        setIsUploadOpen(false);
+        setUploadTitle('');
+        setUploadedFile(null);
+        notify("Training material uploaded successfully!", "success");
       };
 
-      setMaterials([newMaterial, ...materials]);
-      setIsUploadOpen(false);
-      setUploadTitle('');
-      notify("Training material uploaded successfully!", "success");
+      reader.readAsDataURL(uploadedFile);
   };
 
   const handleViewMaterial = (material: TrainingMaterial) => {
@@ -79,17 +169,29 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
   };
 
   const handleDownloadMaterial = (material: TrainingMaterial) => {
-    // Simulate download by creating a dummy file
-    const blob = new Blob([`Training Material: ${material.title}\n\nType: ${material.type}\nCategory: ${material.category}\n\nThis is a demo download.`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${material.title}.${material.type === 'PDF' ? 'pdf' : 'mp4'}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    notify(`Downloading ${material.title}...`, "success");
+    // Download actual file if uploaded, otherwise simulate
+    if (material.url.startsWith('data:')) {
+      // Real file stored as base64
+      const a = document.createElement('a');
+      a.href = material.url;
+      a.download = material.fileName || `${material.title}.${material.type === 'PDF' ? 'pdf' : 'mp4'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      notify(`Downloading ${material.title}...`, "success");
+    } else {
+      // Demo material - simulate download
+      const blob = new Blob([`Training Material: ${material.title}\n\nType: ${material.type}\nCategory: ${material.category}\n\nThis is a demo download.`], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${material.title}.${material.type === 'PDF' ? 'pdf' : 'mp4'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify(`Downloading ${material.title}...`, "success");
+    }
   };
 
   // Check if user has admin/super admin access
@@ -300,14 +402,72 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
                   </div>
 
                   <form onSubmit={handleUpload} className="space-y-4">
+                      {/* File Upload Area */}
+                      <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">File</label>
+                          <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+                              isDragging
+                                ? 'border-brand-500 bg-brand-500/10'
+                                : uploadedFile
+                                ? 'border-green-500 bg-green-500/10'
+                                : 'border-slate-700 bg-slate-900/50 hover:border-brand-500/50'
+                            }`}
+                          >
+                            <input
+                              type="file"
+                              id="file-upload"
+                              className="hidden"
+                              onChange={handleFileSelect}
+                              accept=".pdf,.doc,.docx,.txt,.mp4,.mov,.avi,.wmv,.ppt,.pptx"
+                            />
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              <UploadCloud
+                                size={48}
+                                className={`mx-auto mb-4 ${uploadedFile ? 'text-green-400' : 'text-slate-600'}`}
+                              />
+                              {uploadedFile ? (
+                                <div>
+                                  <p className="text-white font-bold mb-1">{uploadedFile.name}</p>
+                                  <p className="text-sm text-slate-400">
+                                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setUploadedFile(null);
+                                    }}
+                                    className="mt-3 text-xs text-brand-400 hover:text-brand-300"
+                                  >
+                                    Change file
+                                  </button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="text-white font-bold mb-1">
+                                    Click to upload or drag and drop
+                                  </p>
+                                  <p className="text-sm text-slate-500">
+                                    PDF, DOC, TXT, MP4, PPT (Max 50MB)
+                                  </p>
+                                </div>
+                              )}
+                            </label>
+                          </div>
+                      </div>
+
                       <div>
                           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Title</label>
-                          <input 
+                          <input
                             required
-                            type="text" 
+                            type="text"
                             value={uploadTitle}
                             onChange={(e) => setUploadTitle(e.target.value)}
-                            placeholder="e.g. Q4 Sales Playbook" 
+                            placeholder="e.g. Q4 Sales Playbook"
                             className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-500"
                           />
                       </div>
@@ -525,45 +685,59 @@ const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ currentUser }) => {
 
             <div className="flex-1 overflow-auto p-6">
               {viewingMaterial.type === 'PDF' ? (
-                <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
-                  <FileText size={64} className="text-brand-400 mb-6" />
-                  <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
-                  <p className="text-slate-400 text-center max-w-md mb-6">
-                    This is a demo PDF viewer. In production, this would display the actual PDF content using a PDF viewer library like react-pdf or pdf.js.
-                  </p>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
-                    <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Document Preview</h4>
-                    <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
-                      <p>📄 <strong>Topic:</strong> {viewingMaterial.category}</p>
-                      <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
-                      <p>👤 <strong>Author:</strong> {viewingMaterial.addedBy}</p>
-                      <p className="pt-4 border-t border-slate-800">
-                        This training material contains valuable insights and strategies for improving your sales performance.
-                        In a real application, the full PDF would be rendered here with interactive features.
-                      </p>
+                viewingMaterial.url.startsWith('data:') ? (
+                  // Display uploaded PDF
+                  <iframe
+                    src={viewingMaterial.url}
+                    className="w-full h-full rounded-xl border border-slate-800"
+                    title={viewingMaterial.title}
+                  />
+                ) : (
+                  // Demo material
+                  <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
+                    <FileText size={64} className="text-brand-400 mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
+                    <p className="text-slate-400 text-center max-w-md mb-6">
+                      This is a demo material. Upload your own files to view them here!
+                    </p>
+                    <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
+                      <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Document Info</h4>
+                      <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
+                        <p>📄 <strong>Topic:</strong> {viewingMaterial.category}</p>
+                        <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
+                        <p>👤 <strong>Author:</strong> {viewingMaterial.addedBy}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
               ) : (
-                <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
-                  <PlayCircle size={64} className="text-brand-400 mb-6" />
-                  <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
-                  <p className="text-slate-400 text-center max-w-md mb-6">
-                    This is a demo video viewer. In production, this would display the actual video using an HTML5 video player or embedded service like YouTube/Vimeo.
-                  </p>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
-                    <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Video Preview</h4>
-                    <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
-                      <p>🎥 <strong>Topic:</strong> {viewingMaterial.category}</p>
-                      <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
-                      <p>👤 <strong>Instructor:</strong> {viewingMaterial.addedBy}</p>
-                      <p className="pt-4 border-t border-slate-800">
-                        This training video covers essential techniques and best practices.
-                        In a real application, the video player would be embedded here with controls for play, pause, and seeking.
-                      </p>
+                viewingMaterial.url.startsWith('data:') ? (
+                  // Display uploaded video
+                  <video
+                    controls
+                    className="w-full h-full rounded-xl border border-slate-800"
+                    src={viewingMaterial.url}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  // Demo material
+                  <div className="bg-slate-900/50 rounded-xl p-8 h-full flex flex-col items-center justify-center border border-slate-800">
+                    <PlayCircle size={64} className="text-brand-400 mb-6" />
+                    <h3 className="text-2xl font-bold text-white mb-3">{viewingMaterial.title}</h3>
+                    <p className="text-slate-400 text-center max-w-md mb-6">
+                      This is a demo material. Upload your own videos to view them here!
+                    </p>
+                    <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 max-w-2xl w-full">
+                      <h4 className="text-sm font-bold text-brand-300 uppercase tracking-wider mb-4">Video Info</h4>
+                      <div className="space-y-3 text-slate-300 text-sm leading-relaxed">
+                        <p>🎥 <strong>Topic:</strong> {viewingMaterial.category}</p>
+                        <p>📅 <strong>Published:</strong> {viewingMaterial.date}</p>
+                        <p>👤 <strong>Instructor:</strong> {viewingMaterial.addedBy}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
               )}
             </div>
 
