@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import OpenAI from 'openai';
 
-// Backend API for call analysis - bulletproof with OpenAI (more reliable than Gemini)
+// Backend API for call analysis - bulletproof with proper error handling
+// Uses Gemini for AUDIO (native audio support) and text analysis
 // This endpoint is STABLE and won't randomly break
 
 interface AnalyzeCallRequest {
@@ -50,43 +50,48 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'Either transcript or audio is required' });
     }
 
-    // Get API keys from environment
-    const openaiKey = process.env.OPENAI_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+    // Get Gemini API key from environment
+    const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
-    // Use OpenAI as primary (more stable and reliable)
-    if (openaiKey) {
-      console.log('Using OpenAI for call analysis...');
-      try {
-        const result = await analyzeWithOpenAI(transcript!, openaiKey);
-        return res.status(200).json({ success: true, result, provider: 'openai' });
-      } catch (error: any) {
-        console.error('OpenAI failed:', error.message);
-        // Fall through to Gemini
-      }
+    if (!geminiKey) {
+      console.warn('No Gemini API key configured, returning mock analysis');
+      const mockResult = generateMockAnalysis(transcript || 'Audio file uploaded');
+      return res.status(200).json({
+        success: true,
+        result: mockResult,
+        provider: 'mock',
+        warning: 'Gemini API key not configured. This is a demo analysis. Please add GEMINI_API_KEY to Vercel environment variables.'
+      });
     }
 
-    // Fallback to Gemini
-    if (geminiKey) {
-      console.log('Falling back to Gemini for call analysis...');
-      try {
-        const result = await analyzeWithGemini(transcript!, geminiKey);
-        return res.status(200).json({ success: true, result, provider: 'gemini' });
-      } catch (error: any) {
-        console.error('Gemini failed:', error.message);
-        // Fall through to mock
-      }
-    }
+    // Use Gemini for analysis (supports both text AND audio natively)
+    console.log(audioBase64 ? 'Analyzing audio with Gemini...' : 'Analyzing text with Gemini...');
 
-    // Last resort: return a helpful mock result
-    console.warn('All AI providers failed, returning mock analysis');
-    const mockResult = generateMockAnalysis(transcript!);
-    return res.status(200).json({
-      success: true,
-      result: mockResult,
-      provider: 'mock',
-      warning: 'AI providers unavailable. This is a demo analysis. Please configure API keys.'
-    });
+    try {
+      let result;
+      if (audioBase64) {
+        // Audio analysis - Gemini can handle this directly
+        result = await analyzeAudioWithGemini(audioBase64, audioMimeType || 'audio/mpeg', geminiKey);
+      } else {
+        // Text analysis
+        result = await analyzeTextWithGemini(transcript!, geminiKey);
+      }
+
+      return res.status(200).json({ success: true, result, provider: 'gemini' });
+
+    } catch (error: any) {
+      console.error('Gemini analysis failed:', error.message);
+
+      // If Gemini fails, return mock as graceful fallback
+      console.warn('Gemini failed, returning mock analysis');
+      const mockResult = generateMockAnalysis(transcript || 'Audio file uploaded');
+      return res.status(200).json({
+        success: true,
+        result: mockResult,
+        provider: 'mock',
+        warning: `Gemini analysis failed: ${error.message}. Showing demo analysis.`
+      });
+    }
 
   } catch (error: any) {
     console.error('Call analysis error:', error);
@@ -98,58 +103,8 @@ export default async function handler(
   }
 }
 
-// OpenAI Analysis (Primary - Most Reliable)
-async function analyzeWithOpenAI(transcript: string, apiKey: string): Promise<CallAnalysisResult> {
-  const openai = new OpenAI({ apiKey });
-
-  const prompt = `You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
-
-Provide a JSON response with:
-1. score - A performance score (0-100)
-2. summary - A brief executive summary (max 2 sentences)
-3. strengths - Array of top 3 strengths
-4. improvements - Array of top 3 areas for improvement
-5. tone - Analysis of the sales rep's tone (e.g., confident, hesitant, enthusiastic, pushy, professional)
-6. emotionalIntelligence - Score (0-100) for how well the rep read and responded to the prospect's emotions
-
-Transcript:
-${transcript}`;
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini', // Fast, cheap, reliable
-    messages: [
-      {
-        role: 'system',
-        content: 'You are an expert sales coach. Respond ONLY with valid JSON, no markdown, no explanation.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.7,
-    max_tokens: 1000
-  });
-
-  const content = response.choices[0].message.content;
-  if (!content) throw new Error('No response from OpenAI');
-
-  const result = JSON.parse(content);
-
-  return {
-    score: result.score || 75,
-    summary: result.summary || 'Analysis completed',
-    strengths: result.strengths || [],
-    improvements: result.improvements || [],
-    tone: result.tone || 'Professional',
-    emotionalIntelligence: result.emotionalIntelligence || 70,
-    transcript: transcript
-  };
-}
-
-// Gemini Analysis (Fallback)
-async function analyzeWithGemini(transcript: string, apiKey: string): Promise<CallAnalysisResult> {
+// Gemini TEXT Analysis using REST API (Stable)
+async function analyzeTextWithGemini(transcript: string, apiKey: string): Promise<CallAnalysisResult> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
@@ -172,15 +127,16 @@ Transcript: ${transcript}`
           }]
         }],
         generationConfig: {
-          response_mime_type: 'application/json'
+          responseMimeType: 'application/json'
         }
       })
     }
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error: ${error}`);
+    const errorText = await response.text();
+    console.error('Gemini API error response:', errorText);
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
@@ -198,6 +154,69 @@ Transcript: ${transcript}`
     tone: result.tone || 'Professional',
     emotionalIntelligence: result.emotionalIntelligence || 70,
     transcript: transcript
+  };
+}
+
+// Gemini AUDIO Analysis using REST API (Stable) - Gemini can do this natively!
+async function analyzeAudioWithGemini(audioBase64: string, mimeType: string, apiKey: string): Promise<CallAnalysisResult> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              text: `You are an expert sales coach for "Think ABC".
+
+Listen to this sales call recording and provide a comprehensive analysis.
+
+Provide a JSON response with:
+1. transcript - the full transcript of the conversation with speaker labels (Sales Rep: and Prospect:)
+2. score - performance score (0-100)
+3. summary - brief executive summary (max 2 sentences)
+4. strengths - array of top 3 strengths
+5. improvements - array of top 3 areas for improvement
+6. tone - analyze the sales rep's tone
+7. emotionalIntelligence - score (0-100) for how well the rep read and responded to prospect emotions`
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: audioBase64
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Gemini audio API error response:', errorText);
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?..[0]?.text;
+
+  if (!text) throw new Error('No response from Gemini');
+
+  const result = JSON.parse(text);
+
+  return {
+    score: result.score || 75,
+    summary: result.summary || 'Analysis completed',
+    strengths: result.strengths || [],
+    improvements: result.improvements || [],
+    tone: result.tone || 'Professional',
+    emotionalIntelligence: result.emotionalIntelligence || 70,
+    transcript: result.transcript || 'Transcript unavailable'
   };
 }
 

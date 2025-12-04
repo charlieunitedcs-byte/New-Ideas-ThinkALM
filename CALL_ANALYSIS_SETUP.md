@@ -2,39 +2,47 @@
 
 ## What Changed
 
-Call analysis now uses a **backend API** instead of calling AI providers directly from the browser.
+Call analysis now uses a **backend API** instead of calling Gemini directly from the browser.
 
 ### Before (Broken) ❌
 ```
-Browser → Gemini API (direct) → Random Errors
+Browser → Gemini API (direct) → Random model errors, no error handling
 ```
 
 ### After (Bulletproof) ✅
 ```
-Browser → Your Backend API → OpenAI (primary) → Gemini (fallback) → Mock (last resort)
+Browser → Your Backend API → Gemini (stable REST API) → Mock (graceful fallback)
 ```
+
+## Why Gemini?
+
+**Gemini can analyze AUDIO directly!** It:
+- Transcribes audio files
+- Analyzes the conversation
+- Returns both transcript + analysis in one API call
+
+OpenAI can't do this without multiple steps (Whisper → GPT → combine results)
 
 ## Why This Won't Break
 
 1. **Backend-based**: API keys secure, not exposed
-2. **Multiple Providers**: If OpenAI fails, tries Gemini
-3. **Graceful Fallback**: If both fail, returns mock analysis
-4. **Stable Models**: No more beta/experimental versions
-5. **Better Errors**: Clear messages about what went wrong
+2. **Stable Gemini REST API**: Using v1beta/gemini-1.5-flash (stable)
+3. **Graceful Fallback**: If Gemini fails, returns mock analysis with warning
+4. **Better Error Handling**: Catches errors and shows helpful messages
+5. **Audio Support**: Can analyze audio files natively!
 
 ---
 
-## Setup Instructions (5 Minutes)
+## Setup Instructions (3 Minutes)
 
-### Step 1: Get an OpenAI API Key (Primary Provider)
+### Step 1: Get a Gemini API Key (FREE!)
 
-1. Go to https://platform.openai.com/api-keys
-2. Sign up or log in
-3. Click **"Create new secret key"**
-4. Name it "Think ABC Production"
-5. Copy the key (starts with `sk-proj-...` or `sk-...`)
+1. Go to https://makersuite.google.com/app/apikey
+2. Sign in with your Google account
+3. Click **"Create API Key"**
+4. Copy the key
 
-**Cost**: ~$0.0001 per analysis (100 analyses = $0.01)
+**Cost**: FREE! (60 requests per minute limit)
 
 ### Step 2: Add to Vercel
 
@@ -44,7 +52,11 @@ Browser → Your Backend API → OpenAI (primary) → Gemini (fallback) → Mock
 
 | Name | Value |
 |------|-------|
-| `OPENAI_API_KEY` | `sk-proj-your-key-here` |
+| `GEMINI_API_KEY` | `your_gemini_api_key_here` |
+
+**Alternative names also work:**
+- `VITE_GEMINI_API_KEY` (if you used this before)
+- Backend checks both
 
 4. **Important**: Add to **all environments** (Production, Preview, Development)
 5. Click **Save**
@@ -89,59 +101,47 @@ Vercel should auto-deploy after your git push. If not:
 1. **404 Error**: Backend API not deployed yet. Wait 2 minutes and try again.
 
 2. **"No API keys configured"**:
-   - Add `OPENAI_API_KEY` to Vercel environment variables
+   - Add `GEMINI_API_KEY` to Vercel environment variables
    - Redeploy
    - Wait 2 minutes
 
-3. **OpenAI error**:
-   - Check if your OpenAI API key is valid
-   - Make sure you have credits (sign up usually gives $5 free)
-   - Backend will automatically fall back to Gemini if available
+3. **Gemini API error**:
+   - Check if your Gemini API key is valid
+   - Make sure your API key is active at https://makersuite.google.com/app/apikey
+   - Free tier has 60 requests per minute limit
 
-4. **Both providers fail**:
+4. **If Gemini fails**:
    - You'll get a mock analysis with a warning
    - This is the graceful fallback - app never completely breaks
+   - Mock analysis still provides useful demo insights
 
 ### Check What Provider Is Being Used
 
 Open browser console (F12) during analysis. You'll see:
-- `✅ Analysis successful using: openai` ← Working perfectly
-- `✅ Analysis successful using: gemini` ← OpenAI failed, using backup
-- `✅ Analysis successful using: mock` ← Both failed, using demo
-
----
-
-## Optional: Add Gemini as Backup
-
-If you want extra redundancy:
-
-1. Get Gemini API key: https://makersuite.google.com/app/apikey
-2. Add to Vercel:
-   - Name: `GEMINI_API_KEY`
-   - Value: Your Gemini key
-3. Redeploy
-
-Now you have OpenAI → Gemini → Mock fallback chain!
+- `✅ Analysis successful using: gemini` ← Working perfectly with real AI
+- `✅ Analysis successful using: mock` ← Gemini failed, using demo
 
 ---
 
 ## API Cost Estimate
 
-### OpenAI (gpt-4o-mini)
-- $0.150 per 1M input tokens (~$0.0001 per analysis)
-- $0.600 per 1M output tokens (~$0.0003 per analysis)
-- **Total**: ~$0.0004 per call analysis
-- **1,000 analyses**: ~$0.40
-- **10,000 analyses**: ~$4.00
+### Gemini 1.5 Flash (FREE!)
+- **60 requests per minute** - completely FREE
+- **1,500 requests per day** - FREE
+- Perfect for most businesses
+- No credit card required
 
-Very affordable! Most businesses spend less than $10/month.
+### If you exceed free tier:
+- Very affordable pay-as-you-go pricing
+- Most businesses stay within free tier limits
+- Can upgrade to Gemini 1.5 Pro if needed
 
-### Free Tier
-If you don't set up any API keys:
+### Free Tier Fallback
+If you don't set up a Gemini API key:
 - App still works
-- Uses mock analysis
+- Uses mock analysis (demo mode)
 - Shows warning message
-- Good for testing/demos
+- Good for initial testing/demos
 
 ---
 
@@ -149,10 +149,11 @@ If you don't set up any API keys:
 
 After setup, you should have:
 
-- ✅ `OPENAI_API_KEY` set in Vercel
+- ✅ `GEMINI_API_KEY` set in Vercel
 - ✅ App redeployed
 - ✅ Call analysis working in production
-- ✅ Console shows "Analysis successful using: openai"
+- ✅ Console shows "Analysis successful using: gemini"
+- ✅ Audio analysis works (transcribes + analyzes in one step!)
 - ✅ No random errors anymore
 - ✅ Results returned in 3-5 seconds
 
@@ -162,8 +163,18 @@ After setup, you should have:
 
 Once call analysis is working:
 1. Use it! Test with real sales calls
-2. Check that results are helpful
-3. Optional: Set up Gemini backup
+2. Try uploading audio files - Gemini will transcribe AND analyze them!
+3. Check that results are helpful and accurate
 4. Optional: Add Supabase for data persistence (see PRODUCTION_READY_PLAN.md)
 
 Call analysis is now bulletproof and won't randomly break! 🎉
+
+---
+
+## Why This Won't Break Anymore
+
+1. **Backend API**: All calls go through your serverless function, not directly from browser
+2. **Stable Gemini REST API**: Using v1beta with stable model names
+3. **Proper Error Handling**: Validates responses before parsing JSON
+4. **Graceful Fallback**: If Gemini fails, provides mock analysis instead of crashing
+5. **Native Audio Support**: Gemini handles audio files directly - no multi-step process
