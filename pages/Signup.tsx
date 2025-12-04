@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Bot, Mail, Lock, User, Building, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
-import { SubscriptionPlan } from '../types';
+import { SubscriptionPlan, UserRole } from '../types';
 import { createClient } from '../services/clientService';
+import { createUserAccount } from '../services/authService';
 
 interface SignupProps {
   onSignupComplete: () => void;
@@ -50,8 +51,8 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
     // Simulate API delay
     setTimeout(() => {
       try {
-        // Create new client account
-        createClient({
+        // Create new client record
+        const client = createClient({
           companyName: formData.companyName,
           contactName: formData.contactName,
           email: formData.email,
@@ -62,10 +63,22 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
           monthlyRevenue: formData.plan === SubscriptionPlan.PRO ? 2500 : 990
         });
 
+        // Create user account linked to the client
+        createUserAccount(
+          formData.email,
+          formData.password,
+          formData.contactName,
+          formData.companyName,
+          formData.plan,
+          UserRole.ADMIN,
+          client.id
+        );
+
         setStep('success');
         setIsLoading(false);
       } catch (err) {
-        setError('Failed to create account. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create account. Please try again.';
+        setError(errorMessage);
         setIsLoading(false);
       }
     }, 1500);

@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { ArrowUpRight, CheckCircle2, Mic, Users, Clock, Zap, Phone, Trash2, Eye } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Mic, Users, Clock, Zap, Phone, Trash2, Eye, BarChart as BarChartIcon } from 'lucide-react';
 import { NotificationContext } from '../App';
 import { getCallHistory, deleteCallFromHistory, CallHistoryItem } from '../services/callHistoryService';
 import { getCurrentUser } from '../services/authService';
@@ -100,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
         <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BarChart size={40} className="text-slate-600" />
+              <BarChartIcon size={40} className="text-slate-600" />
             </div>
             <h3 className="text-xl font-bold text-white mb-3">No Data Yet</h3>
             <p className="text-slate-400 mb-6">

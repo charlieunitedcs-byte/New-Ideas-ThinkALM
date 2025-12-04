@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Users, Plus, Search, Filter, DollarSign, TrendingUp, Building, Trash2, Edit, Check, X, CreditCard } from 'lucide-react';
+import { Users, Plus, Search, Filter, DollarSign, TrendingUp, Building, Trash2, Edit, Check, X, CreditCard, Mail, Copy, ExternalLink } from 'lucide-react';
 import { Client, SubscriptionPlan, User, UserRole } from '../types';
 import { loadClients, createClient, deleteClient, updateClient, getTotalRevenue, getClientStats } from '../services/clientService';
+import { createClientSignup, sendSignupEmail } from '../services/clientSignupService';
 import { NotificationContext } from '../App';
 
 interface ClientManagementProps {
@@ -13,6 +14,9 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showStripeModal, setShowStripeModal] = useState(false);
+  const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
+  const [signupLink, setSignupLink] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('All');
 
@@ -62,9 +66,22 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     }
 
     try {
-      createClient(newClient);
-      notify(`Client "${newClient.companyName}" added successfully!`, 'success');
+      const client = createClient(newClient);
+
+      // Generate signup link for the client
+      const { link } = createClientSignup(client.id, newClient.email, newClient.companyName);
+
+      // Send email (simulated)
+      sendSignupEmail(newClient.email, newClient.companyName, link);
+
+      // Show the signup link modal
+      setSignupLink(link);
+      setNewClientEmail(newClient.email);
       setShowAddModal(false);
+      setShowSignupLinkModal(true);
+
+      notify(`Client "${newClient.companyName}" added successfully!`, 'success');
+
       setNewClient({
         companyName: '',
         contactName: '',
@@ -79,6 +96,16 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     } catch (error) {
       notify('Failed to add client', 'error');
     }
+  };
+
+  const copySignupLink = () => {
+    navigator.clipboard.writeText(signupLink);
+    notify('Signup link copied to clipboard!', 'success');
+  };
+
+  const sendSignupLinkAgain = () => {
+    sendSignupEmail(newClientEmail, '', signupLink);
+    notify('Signup link sent again!', 'success');
   };
 
   const handleDeleteClient = (id: string, name: string) => {
@@ -421,6 +448,83 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
               >
                 <Check size={18} /> Save Configuration
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Link Modal */}
+      {showSignupLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="glass-panel bg-slate-950 border border-slate-800 w-full max-w-xl rounded-2xl p-8 shadow-2xl relative">
+            <button
+              onClick={() => setShowSignupLinkModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-emerald-600/20 rounded-xl flex items-center justify-center text-emerald-500">
+                <Check size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Client Added Successfully!</h2>
+                <p className="text-sm text-slate-400">Signup form ready to send</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Client Signup Link</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={signupLink}
+                    readOnly
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white text-sm font-mono"
+                  />
+                  <button
+                    onClick={copySignupLink}
+                    className="px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors flex items-center gap-2"
+                    title="Copy link"
+                  >
+                    <Copy size={18} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  This link expires in 7 days. Send it to your client to complete their registration.
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Mail size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-blue-300 mb-1">Email Notification</h4>
+                    <p className="text-xs text-blue-200/80">
+                      An email with the signup link has been simulated to <strong>{newClientEmail}</strong>.
+                      In production, this would send an actual email.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800/50 flex gap-3">
+                <button
+                  onClick={() => window.open(signupLink, '_blank')}
+                  className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <ExternalLink size={18} />
+                  Preview Form
+                </button>
+                <button
+                  onClick={() => setShowSignupLinkModal(false)}
+                  className="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-medium transition-colors"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>

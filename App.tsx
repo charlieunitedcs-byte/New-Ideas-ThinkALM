@@ -33,6 +33,7 @@ import Campaigns from './pages/Campaigns';
 import LandingPage from './pages/LandingPage';
 import ClientManagement from './pages/ClientManagement';
 import Signup from './pages/Signup';
+import ClientSignup from './pages/ClientSignup';
 import { UserRole, User, SubscriptionPlan } from './types';
 import { getCurrentUser, clearUserSession } from './services/authService';
 
@@ -283,6 +284,24 @@ const App: React.FC = () => {
     localStorage.setItem('demo-mode', enabled.toString());
     notify(`Demo mode ${enabled ? 'enabled' : 'disabled'}`, 'success');
   };
+
+  // Check if current URL is a client signup link (public route)
+  const isClientSignupRoute = window.location.hash.startsWith('#/client-signup/');
+
+  // If it's a client signup route, render it directly without auth
+  if (isClientSignupRoute) {
+    return (
+      <NotificationContext.Provider value={{ notify }}>
+        <HashRouter>
+          <Routes>
+            <Route path="/client-signup/:token" element={<ClientSignup />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </HashRouter>
+        {notification && <Toast message={notification.msg} type={notification.type} onClose={() => setNotification(null)} />}
+      </NotificationContext.Provider>
+    );
+  }
 
   // Logic to render based on view state
   if (view === 'landing') {
