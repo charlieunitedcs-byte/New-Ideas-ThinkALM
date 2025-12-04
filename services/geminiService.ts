@@ -48,8 +48,8 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  // Using gemini-1.5-flash for better availability (less traffic than 2.5)
-  const model = "gemini-1.5-flash";
+  // Using gemini-1.5-flash-latest for better availability
+  const model = "gemini-1.5-flash-latest";
   
   const prompt = `
     You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
@@ -111,8 +111,8 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your .env file.");
   }
 
-  // Using gemini-1.5-flash for better availability (less traffic than 2.5)
-  const model = "gemini-1.5-flash";
+  // Using gemini-1.5-flash-latest for better availability
+  const model = "gemini-1.5-flash-latest";
 
   try {
     // Convert audio file to base64
@@ -211,7 +211,7 @@ export const startRoleplaySession = (customSystemInstruction?: string) => {
 
   // Initialize a chat session
   const chat = ai.chats.create({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash-exp",
     config: {
       systemInstruction: systemInstruction,
     },
@@ -232,7 +232,7 @@ export const searchMarketIntel = async (query: string): Promise<SearchResult> =>
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -263,7 +263,7 @@ export const generateMarketingImage = async (prompt: string, size: '1K' | '2K' |
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'imagen-3.0-generate-001',
       contents: {
         parts: [{ text: prompt }],
       },
@@ -323,7 +323,7 @@ export const connectToLiveSession = async (
     
     // 3. Connect to Gemini Live
     const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        model: 'gemini-2.0-flash-exp',
         config: {
             responseModalities: [Modality.AUDIO],
             speechConfig: {
