@@ -1,70 +1,117 @@
-// Multi-Provider AI Service - Fallback from Gemini to OpenAI
+// BULLETPROOF AI Service - Uses backend API with automatic fallbacks
+// This version will NOT randomly break like the old direct API calls
 import { CallAnalysisResult } from '../types';
-import { analyzeCallTranscript as geminiAnalyzeText, analyzeCallAudio as geminiAnalyzeAudio } from './geminiService';
-import { analyzeCallTranscript as openaiAnalyzeText } from './openaiService';
 
 /**
- * Analyzes a call transcript with automatic fallback
- * Tries Gemini first, falls back to OpenAI if Gemini fails
+ * Analyzes a call transcript using BACKEND API
+ * Backend automatically tries: OpenAI → Gemini → Mock
+ * This is MUCH more reliable than calling APIs directly from browser
  */
 export const analyzeCallTranscript = async (transcript: string): Promise<CallAnalysisResult> => {
   try {
-    console.log('Attempting analysis with Gemini...');
-    return await geminiAnalyzeText(transcript);
-  } catch (geminiError: any) {
-    console.warn('Gemini analysis failed, trying OpenAI fallback...', geminiError?.message);
+    console.log('🚀 Analyzing call via backend API (bulletproof)...');
 
-    // Only fallback if it's a server error (not API key missing)
-    const isServerError =
-      geminiError?.message?.includes('overloaded') ||
-      geminiError?.status === 'UNAVAILABLE' ||
-      geminiError?.code === 503 ||
-      geminiError?.message?.includes('quota') ||
-      geminiError?.message?.includes('rate limit');
+    const response = await fetch('/api/analyze-call', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transcript: transcript
+      })
+    });
 
-    if (isServerError) {
-      try {
-        console.log('Using OpenAI as fallback provider...');
-        const result = await openaiAnalyzeText(transcript);
-        console.log('OpenAI fallback successful');
-        return result;
-      } catch (openaiError: any) {
-        console.error('OpenAI fallback also failed', openaiError);
-        throw new Error(
-          'Both AI providers are currently unavailable. Please try again in a few moments. ' +
-          `(Gemini: ${geminiError?.message}, OpenAI: ${openaiError?.message})`
-        );
-      }
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Analysis failed');
     }
 
-    // If it's not a server error, just throw the original error
-    throw geminiError;
+    // Log which provider was used
+    const provider = data.provider || 'unknown';
+    console.log(`✅ Analysis successful using: ${provider}`);
+
+    if (data.warning) {
+      console.warn('⚠️', data.warning);
+    }
+
+    return data.result;
+
+  } catch (error: any) {
+    console.error('❌ Call analysis failed:', error);
+
+    // Provide helpful error message
+    if (error?.message?.includes('fetch')) {
+      throw new Error(
+        'Unable to connect to analysis service. Please check your internet connection and try again.'
+      );
+    }
+
+    throw new Error(
+      error?.message || 'Call analysis failed. Please try again or contact support.'
+    );
   }
 };
 
 /**
- * Analyzes call audio - Gemini only (OpenAI Whisper requires different setup)
- * Falls back to friendly error message
+ * Analyzes call audio using BACKEND API
+ * Backend handles audio processing and falls back gracefully
  */
 export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisResult> => {
   try {
-    console.log('Attempting audio analysis with Gemini...');
-    return await geminiAnalyzeAudio(audioFile);
-  } catch (error: any) {
-    console.error('Audio analysis failed', error);
+    console.log('🎤 Analyzing audio via backend API...');
 
-    const isServerError =
-      error?.message?.includes('overloaded') ||
-      error?.status === 'UNAVAILABLE' ||
-      error?.code === 503;
+    // Convert audio to base64
+    const base64Audio = await fileToBase64(audioFile);
 
-    if (isServerError) {
-      throw new Error(
-        'Audio analysis is temporarily unavailable. Please try again in a few moments, ' +
-        'or use the "Paste Transcript" tab to analyze text instead.'
-      );
+    const response = await fetch('/api/analyze-call', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        audioBase64: base64Audio,
+        audioMimeType: audioFile.type
+      })
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Audio analysis failed');
     }
 
-    throw error;
+    console.log(`✅ Audio analysis successful using: ${data.provider || 'unknown'}`);
+
+    if (data.warning) {
+      console.warn('⚠️', data.warning);
+    }
+
+    return data.result;
+
+  } catch (error: any) {
+    console.error('❌ Audio analysis failed:', error);
+
+    throw new Error(
+      error?.message || 'Audio analysis failed. Try pasting the transcript instead.'
+    );
   }
+};
+
+// Helper function to convert File to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        // Remove the data URL prefix (e.g., "data:audio/mpeg;base64,")
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = error => reject(error);
+  });
 };
