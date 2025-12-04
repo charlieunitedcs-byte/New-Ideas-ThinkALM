@@ -110,13 +110,37 @@ export const getSignupData = (token: string): ClientSignupData | null => {
   }
 };
 
-// Send email with signup link (simulated for demo)
-export const sendSignupEmail = (email: string, companyName: string, link: string): void => {
-  console.log('📧 Sending signup email:');
-  console.log('To:', email);
-  console.log('Subject: Complete Your Think ABC Client Registration');
-  console.log('Link:', link);
+// Send email with signup link
+export const sendSignupEmail = async (email: string, companyName: string, link: string, contactName?: string): Promise<void> => {
+  try {
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'client-signup',
+        to: email,
+        data: {
+          signupLink: link,
+          companyName: companyName,
+          contactName: contactName
+        }
+      })
+    });
 
-  // In production, this would call a backend API to send actual email
-  // For now, we'll just log it and copy to clipboard
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('✅ Signup email sent successfully to:', email);
+    } else {
+      console.error('❌ Failed to send signup email:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ Error sending signup email:', error);
+    // Still log to console as fallback
+    console.log('📧 Signup email fallback:');
+    console.log('To:', email);
+    console.log('Link:', link);
+  }
 };

@@ -59,7 +59,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     setShowStripeModal(false);
   };
 
-  const handleAddClient = () => {
+  const handleAddClient = async () => {
     if (!newClient.companyName || !newClient.email) {
       notify('Company name and email are required', 'error');
       return;
@@ -71,8 +71,8 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
       // Generate signup link for the client
       const { link } = createClientSignup(client.id, newClient.email, newClient.companyName);
 
-      // Send email (simulated)
-      sendSignupEmail(newClient.email, newClient.companyName, link);
+      // Send email to client
+      await sendSignupEmail(newClient.email, newClient.companyName, link, newClient.contactName);
 
       // Show the signup link modal
       setSignupLink(link);
