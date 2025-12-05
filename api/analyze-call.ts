@@ -6,7 +6,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 interface AnalyzeCallRequest {
   transcript?: string;
-  audioBase64?: string;
+  audioUrl?: string;        // Supabase Storage URL (preferred)
+  audioBase64?: string;     // Fallback for small files
   audioMimeType?: string;
 }
 
@@ -44,14 +45,38 @@ export default async function handler(
   }
 
   try {
-    const { transcript, audioBase64, audioMimeType } = req.body as AnalyzeCallRequest;
+    const { transcript, audioUrl, audioBase64, audioMimeType } = req.body as AnalyzeCallRequest;
 
-    if (!transcript && !audioBase64) {
-      return res.status(400).json({ success: false, error: 'Either transcript or audio is required' });
+    if (!transcript && !audioUrl && !audioBase64) {
+      return res.status(400).json({ success: false, error: 'Either transcript, audioUrl, or audioBase64 is required' });
     }
 
-    // Check payload size (Vercel limit is ~4.5MB)
-    if (audioBase64 && audioBase64.length > 3 * 1024 * 1024) {
+    // If audioUrl is provided, download the audio file
+    let finalAudioBase64 = audioBase64;
+    let finalMimeType = audioMimeType;
+
+    if (audioUrl) {
+      console.log('📥 Downloading audio from URL:', audioUrl);
+      try {
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) {
+          throw new Error(`Failed to download audio: ${audioResponse.status}`);
+        }
+        const audioBuffer = await audioResponse.arrayBuffer();
+        finalAudioBase64 = Buffer.from(audioBuffer).toString('base64');
+        finalMimeType = audioResponse.headers.get('content-type') || audioMimeType || 'audio/mpeg';
+        console.log('✅ Audio downloaded successfully');
+      } catch (downloadError: any) {
+        console.error('Audio download error:', downloadError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to download audio file: ${downloadError.message}`
+        });
+      }
+    }
+
+    // Check payload size (Vercel limit is ~4.5MB) - only for base64
+    if (finalAudioBase64 && finalAudioBase64.length > 3 * 1024 * 1024) {
       return res.status(413).json({
         success: false,
         error: 'Audio file is too large. Maximum size is 3MB. Please use a shorter clip or paste the transcript instead.'
@@ -73,13 +98,13 @@ export default async function handler(
     }
 
     // Use Gemini for analysis (supports both text AND audio natively)
-    console.log(audioBase64 ? 'Analyzing audio with Gemini...' : 'Analyzing text with Gemini...');
+    console.log(finalAudioBase64 ? 'Analyzing audio with Gemini...' : 'Analyzing text with Gemini...');
 
     try {
       let result;
-      if (audioBase64) {
+      if (finalAudioBase64) {
         // Audio analysis - Gemini can handle this directly
-        result = await analyzeAudioWithGemini(audioBase64, audioMimeType || 'audio/mpeg', geminiKey);
+        result = await analyzeAudioWithGemini(finalAudioBase64, finalMimeType || 'audio/mpeg', geminiKey);
       } else {
         // Text analysis
         result = await analyzeTextWithGemini(transcript!, geminiKey);

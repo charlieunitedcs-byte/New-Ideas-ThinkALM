@@ -52,14 +52,14 @@ const CallAnalysis: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const audioFile = e.target.files[0];
 
-      // Check file size (limit to 3MB to avoid serverless function payload limits)
-      const maxSizeInMB = 3;
+      // Reasonable file size limit (50MB max - most sales calls are much smaller)
+      const maxSizeInMB = 50;
       const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 
       if (audioFile.size > maxSizeInBytes) {
         setError(
           `Audio file is too large (${(audioFile.size / 1024 / 1024).toFixed(1)}MB). ` +
-          `Maximum size is ${maxSizeInMB}MB due to serverless function limits. ` +
+          `Maximum size is ${maxSizeInMB}MB. ` +
           `Please use a shorter audio clip or paste the transcript instead.`
         );
         e.target.value = ''; // Reset file input

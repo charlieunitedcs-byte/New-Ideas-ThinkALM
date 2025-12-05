@@ -86,14 +86,15 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
 
 /**
  * Analyzes call audio using BACKEND API
- * Backend handles audio processing and falls back gracefully
+ * Uses Supabase Storage for large files, falls back to base64 for small files
  */
 export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisResult> => {
   try {
     console.log('🎤 Analyzing audio via backend API...');
 
-    // Convert audio to base64
-    const base64Audio = await fileToBase64(audioFile);
+    // Upload to Supabase Storage (or fall back to base64)
+    const { uploadAudioFile } = await import('./audioStorageService');
+    const uploadResult = await uploadAudioFile(audioFile);
 
     const response = await fetch('/api/analyze-call', {
       method: 'POST',
@@ -101,8 +102,9 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        audioBase64: base64Audio,
-        audioMimeType: audioFile.type
+        audioUrl: uploadResult.url,        // Supabase URL (preferred)
+        audioBase64: uploadResult.base64,  // Fallback for small files
+        audioMimeType: uploadResult.mimeType
       })
     });
 
