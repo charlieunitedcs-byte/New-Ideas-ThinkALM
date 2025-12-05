@@ -28,7 +28,7 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
 
     // Upload to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('call-recordings')
+      .from('CALL_RECORDINGS')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false
@@ -43,7 +43,7 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
 
     // Create a signed URL that expires in 1 hour
     const { data: urlData, error: urlError } = await supabase.storage
-      .from('call-recordings')
+      .from('CALL_RECORDINGS')
       .createSignedUrl(uploadData.path, 3600); // 1 hour expiry
 
     if (urlError) {
@@ -80,14 +80,14 @@ export const deleteAudioFile = async (url: string): Promise<void> => {
   try {
     // Extract file path from signed URL
     const urlObj = new URL(url);
-    const pathMatch = urlObj.pathname.match(/call-recordings\/(.+)\?/);
+    const pathMatch = urlObj.pathname.match(/CALL_RECORDINGS\/(.+)\?/);
 
     if (!pathMatch) return;
 
     const filePath = pathMatch[1];
 
     const { error } = await supabase.storage
-      .from('call-recordings')
+      .from('CALL_RECORDINGS')
       .remove([filePath]);
 
     if (error) {

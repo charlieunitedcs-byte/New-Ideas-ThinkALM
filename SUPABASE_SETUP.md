@@ -37,7 +37,7 @@ With Supabase, you can:
 
 1. In Supabase Dashboard, go to **Storage** (left sidebar)
 2. Click **"Create a new bucket"**
-3. Bucket name: `call-recordings`
+3. Bucket name: `CALL_RECORDINGS`
 4. Public bucket: **YES** (check the box)
    - This allows the backend to download audio via signed URLs
 5. Click **"Create bucket"**
@@ -175,7 +175,7 @@ For now, **public bucket with signed URLs** is perfect!
 ### "Failed to upload to Supabase"
 
 **Check:**
-1. Bucket name is exactly `call-recordings`
+1. Bucket name is exactly `CALL_RECORDINGS`
 2. Bucket is set to **public**
 3. Environment variables are correct
 4. Variables added to **all environments** in Vercel
@@ -239,7 +239,7 @@ For now, **public bucket with signed URLs** is perfect!
 After setup, you should have:
 
 - ✅ Supabase project created
-- ✅ `call-recordings` bucket created (public)
+- ✅ `CALL_RECORDINGS` bucket created (public)
 - ✅ API keys added to `.env.local`
 - ✅ API keys added to Vercel
 - ✅ Redeployed to production
