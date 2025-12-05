@@ -138,7 +138,7 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-32 w-auto object-contain"
+              className="h-48 w-auto object-contain"
             />
           </div>
           <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Create Your Account</h1>
