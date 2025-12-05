@@ -78,11 +78,11 @@ const Sidebar = ({ isOpen, toggle, onLogout, currentUser }: { isOpen: boolean; t
         className={`fixed top-0 left-0 z-30 h-full w-64 glass-panel border-r border-slate-800/50 transform transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex flex-col h-full bg-slate-950/40">
-          <div className="h-40 flex items-center justify-center px-6 border-b border-brand-500/10 bg-gradient-to-br from-slate-900/50 to-slate-950/50">
+          <div className="h-48 flex items-center justify-center px-6 border-b border-brand-500/10 bg-gradient-to-br from-slate-900/50 to-slate-950/50">
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-32 w-auto object-contain"
+              className="h-40 w-auto object-contain"
             />
           </div>
 
