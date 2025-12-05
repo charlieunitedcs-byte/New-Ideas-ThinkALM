@@ -80,15 +80,11 @@ const Sidebar = ({ isOpen, toggle, onLogout, currentUser }: { isOpen: boolean; t
         <div className="flex flex-col h-full bg-slate-950/40">
           <div className="h-20 flex items-center px-6 border-b border-brand-500/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-accent-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                 <Bot className="text-white" size={22} />
-              </div>
-              <div>
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                  Think ABC
-                </span>
-                <span className="block text-[10px] text-brand-300 tracking-wider font-semibold">AI SALES OS</span>
-              </div>
+              <img
+                src="/logo.png"
+                alt="Think ABC Logo"
+                className="h-12 w-auto object-contain"
+              />
             </div>
           </div>
 

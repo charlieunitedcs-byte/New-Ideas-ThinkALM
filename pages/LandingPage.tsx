@@ -13,10 +13,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 glass-panel border-b border-white/5 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-accent-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                <Bot className="text-white" size={24} />
-            </div>
-            <span className="text-xl font-bold tracking-tight">Think ABC</span>
+            <img
+              src="/logo.png"
+              alt="Think ABC Logo"
+              className="h-10 w-auto object-contain"
+            />
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
