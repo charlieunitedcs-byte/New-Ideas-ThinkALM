@@ -16,7 +16,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-10 w-auto object-contain"
+              className="h-14 w-auto object-contain"
             />
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">

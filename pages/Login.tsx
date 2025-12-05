@@ -41,10 +41,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)] mx-auto mb-6 transform rotate-3 hover:rotate-6 transition-transform duration-500">
-            <Bot className="text-white" size={32} />
+          <div className="mb-6 flex justify-center">
+            <img
+              src="/logo.png"
+              alt="Think ABC Logo"
+              className="h-24 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Think ABC</h1>
           <p className="text-brand-300 font-medium tracking-widest text-xs uppercase">Sales Command Operating System</p>
         </div>
 

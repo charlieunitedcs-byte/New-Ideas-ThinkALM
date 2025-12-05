@@ -205,11 +205,15 @@ const ClientSignup: React.FC = () => {
 
       <div className="w-full max-w-3xl relative z-10">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.4)] mx-auto mb-6">
-            <Bot className="text-white" size={32} />
+          <div className="mb-6 flex justify-center">
+            <img
+              src="/logo.png"
+              alt="Think ABC Logo"
+              className="h-24 w-auto object-contain"
+            />
           </div>
           <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Complete Your Setup</h1>
-          <p className="text-brand-300 font-medium text-sm">Welcome to Think ABC • {signupInfo?.companyName}</p>
+          <p className="text-brand-300 font-medium text-sm">Welcome • {signupInfo?.companyName}</p>
         </div>
 
         <div className="glass-panel border border-brand-500/20 p-8 rounded-3xl shadow-2xl backdrop-blur-xl">
