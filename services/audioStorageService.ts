@@ -6,8 +6,13 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
  */
 export const uploadAudioFile = async (file: File): Promise<{ url?: string; base64?: string; mimeType: string }> => {
   // Check if Supabase is configured
+  console.log('🔍 DEBUG: Checking Supabase configuration...');
+  console.log('🔍 DEBUG: VITE_SUPABASE_URL exists?', !!import.meta.env.VITE_SUPABASE_URL);
+  console.log('🔍 DEBUG: VITE_SUPABASE_ANON_KEY exists?', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+  console.log('🔍 DEBUG: isSupabaseConfigured?', isSupabaseConfigured());
+
   if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured, falling back to base64 upload');
+    console.warn('⚠️ Supabase not configured, falling back to base64 upload');
 
     // Fallback: Convert to base64 (old method with size limits)
     const base64 = await fileToBase64(file);
