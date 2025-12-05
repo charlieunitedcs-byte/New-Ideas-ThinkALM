@@ -75,8 +75,9 @@ export default async function handler(
       }
     }
 
-    // Check payload size (Vercel limit is ~4.5MB) - only for base64
-    if (finalAudioBase64 && finalAudioBase64.length > 3 * 1024 * 1024) {
+    // Check payload size (Vercel limit is ~4.5MB) - only for direct base64 uploads
+    // Skip this check if using audioUrl (Supabase), since we're downloading from our own storage
+    if (!audioUrl && finalAudioBase64 && finalAudioBase64.length > 3 * 1024 * 1024) {
       return res.status(413).json({
         success: false,
         error: 'Audio file is too large. Maximum size is 3MB. Please use a shorter clip or paste the transcript instead.'
