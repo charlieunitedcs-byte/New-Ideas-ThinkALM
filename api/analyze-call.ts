@@ -50,6 +50,14 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'Either transcript or audio is required' });
     }
 
+    // Check payload size (Vercel limit is ~4.5MB)
+    if (audioBase64 && audioBase64.length > 3 * 1024 * 1024) {
+      return res.status(413).json({
+        success: false,
+        error: 'Audio file is too large. Maximum size is 3MB. Please use a shorter clip or paste the transcript instead.'
+      });
+    }
+
     // Get Gemini API key from environment
     const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
