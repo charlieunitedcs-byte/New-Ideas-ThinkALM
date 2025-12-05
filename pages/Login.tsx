@@ -45,7 +45,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-24 w-auto object-contain"
+              className="h-32 w-auto object-contain"
             />
           </div>
           <p className="text-brand-300 font-medium tracking-widest text-xs uppercase">Sales Command Operating System</p>

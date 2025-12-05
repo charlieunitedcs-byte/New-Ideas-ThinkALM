@@ -11,12 +11,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
   return (
     <div className="min-h-screen bg-[#05060e] text-white overflow-x-hidden font-sans selection:bg-brand-500/30">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-panel border-b border-white/5 px-6 py-4 flex justify-between items-center">
+      <nav className="fixed top-0 w-full z-50 glass-panel border-b border-white/5 px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-3">
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-14 w-auto object-contain"
+              className="h-20 w-auto object-contain"
             />
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">

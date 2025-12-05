@@ -209,7 +209,7 @@ const ClientSignup: React.FC = () => {
             <img
               src="/logo.png"
               alt="Think ABC Logo"
-              className="h-24 w-auto object-contain"
+              className="h-32 w-auto object-contain"
             />
           </div>
           <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Complete Your Setup</h1>
