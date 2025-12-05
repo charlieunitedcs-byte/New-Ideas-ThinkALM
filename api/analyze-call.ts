@@ -236,7 +236,7 @@ Provide a JSON response with:
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?..[0]?.text;
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text) throw new Error('No response from Gemini');
 
