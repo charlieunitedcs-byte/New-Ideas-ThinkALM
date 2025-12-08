@@ -7,8 +7,9 @@ export enum UserRole {
 }
 
 export enum SubscriptionPlan {
-  ESSENTIALS = 'Team Essentials',
-  PRO = 'Pro Growth'
+  PER_USER = 'Per User',
+  TEAM = 'Team Plan',
+  COMPANY = 'Company Unlimited'
 }
 
 export enum CallStatus {

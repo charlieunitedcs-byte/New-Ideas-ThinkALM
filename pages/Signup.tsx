@@ -21,7 +21,7 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
     password: '',
     confirmPassword: '',
     phone: '',
-    plan: SubscriptionPlan.ESSENTIALS
+    plan: SubscriptionPlan.TEAM
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -238,35 +238,49 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
 
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Choose Your Plan</label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, plan: SubscriptionPlan.ESSENTIALS })}
+                  onClick={() => setFormData({ ...formData, plan: SubscriptionPlan.PER_USER })}
                   className={`p-4 rounded-xl border-2 transition-all ${
-                    formData.plan === SubscriptionPlan.ESSENTIALS
+                    formData.plan === SubscriptionPlan.PER_USER
                       ? 'border-brand-500 bg-brand-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                       : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
                   }`}
                 >
-                  <p className="font-bold text-white mb-1">Team Essentials</p>
-                  <p className="text-2xl font-bold text-brand-400 mb-2">$99<span className="text-sm text-slate-500">/mo</span></p>
+                  <p className="font-bold text-white mb-1 text-sm">Per User</p>
+                  <p className="text-xl font-bold text-brand-400 mb-2">$49<span className="text-xs text-slate-500">/mo</span></p>
+                  <p className="text-xs text-slate-400">Per user/month</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, plan: SubscriptionPlan.TEAM })}
+                  className={`p-4 rounded-xl border-2 transition-all relative ${
+                    formData.plan === SubscriptionPlan.TEAM
+                      ? 'border-brand-500 bg-brand-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                      : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
+                  }`}
+                >
+                  <div className="absolute -top-3 right-2 px-2 py-0.5 bg-brand-600 text-white text-[10px] font-bold rounded-full">
+                    POPULAR
+                  </div>
+                  <p className="font-bold text-white mb-1 text-sm">Team Plan</p>
+                  <p className="text-xl font-bold text-brand-400 mb-2">$299<span className="text-xs text-slate-500">/mo</span></p>
                   <p className="text-xs text-slate-400">Up to 10 users</p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, plan: SubscriptionPlan.PRO })}
-                  className={`p-4 rounded-xl border-2 transition-all relative ${
-                    formData.plan === SubscriptionPlan.PRO
+                  onClick={() => setFormData({ ...formData, plan: SubscriptionPlan.COMPANY })}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    formData.plan === SubscriptionPlan.COMPANY
                       ? 'border-brand-500 bg-brand-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                       : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
                   }`}
                 >
-                  <div className="absolute -top-3 right-3 px-2 py-0.5 bg-brand-600 text-white text-[10px] font-bold rounded-full">
-                    POPULAR
-                  </div>
-                  <p className="font-bold text-white mb-1">Pro Growth</p>
-                  <p className="text-2xl font-bold text-brand-400 mb-2">$250<span className="text-sm text-slate-500">/mo</span></p>
+                  <p className="font-bold text-white mb-1 text-sm">Company</p>
+                  <p className="text-xl font-bold text-brand-400 mb-2">$999<span className="text-xs text-slate-500">/mo</span></p>
                   <p className="text-xs text-slate-400">Unlimited users</p>
                 </button>
               </div>

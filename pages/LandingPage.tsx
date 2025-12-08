@@ -262,25 +262,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                 </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                {/* Team Essentials */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {/* Per User */}
                 <div className="glass-panel border border-slate-800 p-8 rounded-3xl relative overflow-hidden group hover:border-slate-600 transition-colors">
-                    <h3 className="text-xl font-bold text-white mb-2">Team Essentials</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">Per User</h3>
                     <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-4xl font-bold text-white">$39</span>
+                        <span className="text-4xl font-bold text-white">$49</span>
                         <span className="text-slate-500">/user/mo</span>
                     </div>
-                    <p className="text-slate-400 text-sm mb-8">For small teams looking to professionalize their sales training.</p>
-                    
+                    <p className="text-slate-400 text-sm mb-8">Perfect for individual reps or small teams getting started.</p>
+
                     <ul className="space-y-4 mb-8">
-                        <li className="flex items-center gap-3 text-sm text-slate-300">
-                            <Check size={16} className="text-brand-500" /> 5 User Minimum
-                        </li>
                         <li className="flex items-center gap-3 text-sm text-slate-300">
                             <Check size={16} className="text-brand-500" /> AI Call Analysis
                         </li>
                         <li className="flex items-center gap-3 text-sm text-slate-300">
-                            <Check size={16} className="text-brand-500" /> Basic Content Library
+                            <Check size={16} className="text-brand-500" /> AI Roleplay Training
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-slate-300">
+                            <Check size={16} className="text-brand-500" /> Content Library Access
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-slate-300">
+                            <Check size={16} className="text-brand-500" /> Performance Analytics
                         </li>
                     </ul>
 
@@ -293,32 +296,35 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                     <p className="text-center text-xs text-slate-500 mt-3">No credit card • 14 days free</p>
                 </div>
 
-                {/* Pro Growth */}
+                {/* Team Plan */}
                 <div className="glass-panel border border-brand-500/50 p-8 rounded-3xl relative overflow-hidden transform md:-translate-y-4 shadow-2xl shadow-brand-900/20">
                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-500 via-accent-500 to-brand-500"></div>
                     <div className="absolute top-4 right-4 px-3 py-1 bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-full">
                         Best Value
                     </div>
-                    
-                    <h3 className="text-xl font-bold text-white mb-2">Pro Growth</h3>
+
+                    <h3 className="text-xl font-bold text-white mb-2">Team Plan</h3>
                     <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-4xl font-bold text-white">$59</span>
-                        <span className="text-slate-500">/user/mo</span>
+                        <span className="text-4xl font-bold text-white">$299</span>
+                        <span className="text-slate-500">/month</span>
                     </div>
-                    <p className="text-slate-400 text-sm mb-8">Full-scale operating system for high-performance sales orgs.</p>
-                    
+                    <p className="text-slate-400 text-sm mb-8">For growing teams up to 10 users. Best value per user.</p>
+
                     <ul className="space-y-4 mb-8">
                         <li className="flex items-center gap-3 text-sm text-white">
-                            <Check size={16} className="text-accent-500" /> <strong>Everything in Essentials</strong>
+                            <Check size={16} className="text-accent-500" /> <strong>Up to 10 Users</strong>
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-white">
+                            <Check size={16} className="text-accent-500" /> <strong>Everything in Per User</strong>
                         </li>
                         <li className="flex items-center gap-3 text-sm text-slate-300">
-                            <Check size={16} className="text-accent-500" /> CRM Integration (HubSpot)
+                            <Check size={16} className="text-accent-500" /> Team Performance Dashboard
                         </li>
                         <li className="flex items-center gap-3 text-sm text-slate-300">
-                            <Check size={16} className="text-accent-500" /> AI Roleplay Agents
+                            <Check size={16} className="text-accent-500" /> Collaborative Features
                         </li>
                         <li className="flex items-center gap-3 text-sm text-slate-300">
-                            <Check size={16} className="text-accent-500" /> Advanced Analytics
+                            <Check size={16} className="text-accent-500" /> Priority Support
                         </li>
                     </ul>
 
@@ -326,9 +332,45 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                         onClick={onLoginClick}
                         className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold shadow-lg shadow-brand-500/25 transition-all"
                     >
-                        Start Free Trial - Most Popular
+                        Start Free Trial
                     </button>
-                    <p className="text-center text-xs text-slate-400 mt-3">No credit card • 14 days free • Instant access</p>
+                    <p className="text-center text-xs text-slate-400 mt-3">No credit card • 14 days free</p>
+                </div>
+
+                {/* Company Unlimited */}
+                <div className="glass-panel border border-slate-800 p-8 rounded-3xl relative overflow-hidden group hover:border-slate-600 transition-colors">
+                    <h3 className="text-xl font-bold text-white mb-2">Company Unlimited</h3>
+                    <div className="flex items-baseline gap-1 mb-6">
+                        <span className="text-4xl font-bold text-white">$999</span>
+                        <span className="text-slate-500">/month</span>
+                    </div>
+                    <p className="text-slate-400 text-sm mb-8">Enterprise solution for unlimited users and custom needs.</p>
+
+                    <ul className="space-y-4 mb-8">
+                        <li className="flex items-center gap-3 text-sm text-white">
+                            <Check size={16} className="text-emerald-500" /> <strong>Unlimited Users</strong>
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-white">
+                            <Check size={16} className="text-emerald-500" /> <strong>Everything in Team</strong>
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-slate-300">
+                            <Check size={16} className="text-emerald-500" /> Custom Integrations
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-slate-300">
+                            <Check size={16} className="text-emerald-500" /> Dedicated Account Manager
+                        </li>
+                        <li className="flex items-center gap-3 text-sm text-slate-300">
+                            <Check size={16} className="text-emerald-500" /> SLA & Premium Support
+                        </li>
+                    </ul>
+
+                    <button
+                        onClick={onLoginClick}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold border border-slate-700 transition-all"
+                    >
+                        Start Free Trial
+                    </button>
+                    <p className="text-center text-xs text-slate-500 mt-3">No credit card • 14 days free</p>
                 </div>
             </div>
             

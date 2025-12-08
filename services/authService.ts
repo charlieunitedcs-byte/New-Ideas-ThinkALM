@@ -108,7 +108,7 @@ export const authenticateUser = (email: string, password: string): User | null =
       email: SUPER_ADMIN_EMAIL,
       role: UserRole.SUPER_ADMIN,
       team: 'Platform Management',
-      plan: SubscriptionPlan.PRO,
+      plan: SubscriptionPlan.COMPANY,
       status: 'Active',
       lastLogin: new Date().toLocaleString(),
       avatarUrl: 'https://ui-avatars.com/api/?name=Super+Admin&background=ef4444&color=fff'
@@ -123,7 +123,7 @@ export const authenticateUser = (email: string, password: string): User | null =
       email: 'demo@thinkabc.com',
       role: UserRole.ADMIN,
       team: 'Demo Team',
-      plan: SubscriptionPlan.PRO,
+      plan: SubscriptionPlan.COMPANY,
       status: 'Active',
       lastLogin: new Date().toLocaleString(),
       avatarUrl: 'https://ui-avatars.com/api/?name=Demo+User&background=3b82f6&color=fff'
