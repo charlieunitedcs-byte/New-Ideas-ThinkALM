@@ -270,9 +270,16 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
                         {call.score}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-slate-400">
-                          {new Date(call.analyzedAt).toLocaleDateString()} at {new Date(call.analyzedAt).toLocaleTimeString()}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          {call.salesRepName && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-500/10 border border-brand-500/30 text-brand-300 text-xs font-medium">
+                              {call.salesRepName}
+                            </span>
+                          )}
+                          <p className="text-sm text-slate-400">
+                            {new Date(call.analyzedAt).toLocaleDateString()} at {new Date(call.analyzedAt).toLocaleTimeString()}
+                          </p>
+                        </div>
                         <p className="text-white font-medium mt-1 line-clamp-1">{call.summary}</p>
                       </div>
                     </div>

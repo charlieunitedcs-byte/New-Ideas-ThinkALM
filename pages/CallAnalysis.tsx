@@ -11,7 +11,8 @@ const CallAnalysis: React.FC = () => {
   const [result, setResult] = useState<CallAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'upload' | 'paste'>('paste');
-  
+  const [salesRepName, setSalesRepName] = useState<string>('');
+
   // Collaboration & Gamification State
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -34,7 +35,7 @@ const CallAnalysis: React.FC = () => {
       // Save to call history
       const currentUser = getCurrentUser();
       if (currentUser) {
-        saveCallToHistory(data, currentUser.id);
+        saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined);
       }
 
       // Trigger gamification toast
@@ -81,7 +82,7 @@ const CallAnalysis: React.FC = () => {
         // Save to call history
         const currentUser = getCurrentUser();
         if (currentUser) {
-          saveCallToHistory(data, currentUser.id);
+          saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined);
         }
 
         // Trigger gamification toast
@@ -165,7 +166,19 @@ const CallAnalysis: React.FC = () => {
           <div className="px-6 pb-6">
             {tab === 'paste' ? (
               <div className="space-y-4">
-                <textarea 
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Sales Rep Name <span className="text-slate-600">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-300 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none text-sm"
+                    placeholder="e.g., John Smith"
+                    value={salesRepName}
+                    onChange={(e) => setSalesRepName(e.target.value)}
+                  />
+                </div>
+                <textarea
                   className="w-full h-72 bg-slate-950/50 border border-slate-700/50 rounded-xl p-5 text-slate-300 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none resize-none font-mono text-sm leading-relaxed"
                   placeholder="Paste conversation transcript here..."
                   value={transcriptInput}
@@ -183,8 +196,21 @@ const CallAnalysis: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-slate-700 rounded-xl p-16 flex flex-col items-center justify-center text-center hover:bg-slate-800/20 transition-colors group">
-                {isAnalyzing ? (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Sales Rep Name <span className="text-slate-600">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-300 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 outline-none text-sm"
+                    placeholder="e.g., John Smith"
+                    value={salesRepName}
+                    onChange={(e) => setSalesRepName(e.target.value)}
+                  />
+                </div>
+                <div className="border-2 border-dashed border-slate-700 rounded-xl p-16 flex flex-col items-center justify-center text-center hover:bg-slate-800/20 transition-colors group">
+                  {isAnalyzing ? (
                   <>
                     <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-6">
                       <Loader2 size={40} className="text-brand-400 animate-spin" />
@@ -220,6 +246,7 @@ const CallAnalysis: React.FC = () => {
                     </label>
                   </>
                 )}
+                </div>
               </div>
             )}
             

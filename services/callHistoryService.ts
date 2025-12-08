@@ -7,15 +7,17 @@ export interface CallHistoryItem extends CallAnalysisResult {
   id: string;
   analyzedAt: string;
   userId: string;
+  salesRepName?: string;
 }
 
-export const saveCallToHistory = (result: CallAnalysisResult, userId: string): void => {
+export const saveCallToHistory = (result: CallAnalysisResult, userId: string, salesRepName?: string): void => {
   const history = getCallHistory();
   const newItem: CallHistoryItem = {
     ...result,
     id: Date.now().toString(),
     analyzedAt: new Date().toISOString(),
-    userId
+    userId,
+    salesRepName
   };
 
   // Add to beginning of array (most recent first)
