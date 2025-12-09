@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Bot, ArrowRight, Shield, Zap, BarChart2, Globe, Check, Play, Star, Award, Lock, Users2, TrendingUp } from 'lucide-react';
 
 interface LandingPageProps {
@@ -8,6 +8,28 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }) => {
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+
+  // Calculate pricing based on billing period
+  const getPricing = () => {
+    if (billingPeriod === 'monthly') {
+      return {
+        perUser: { price: 49, period: '/user/mo' },
+        team: { price: 299, period: '/month' },
+        company: { price: 999, period: '/month' }
+      };
+    } else {
+      // Annual pricing with 20% discount
+      return {
+        perUser: { price: 39, period: '/user/mo', savings: 'Save $120/year' },
+        team: { price: 239, period: '/month', savings: 'Save $720/year' },
+        company: { price: 799, period: '/month', savings: 'Save $2,400/year' }
+      };
+    }
+  };
+
+  const pricing = getPricing();
+
   return (
     <div className="min-h-screen bg-[#05060e] text-white overflow-x-hidden font-sans selection:bg-brand-500/30">
       {/* Navigation */}
@@ -257,8 +279,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                 <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Transparent Pricing</h2>
                 <p className="text-slate-400 mb-6">Scale your sales operations with plans built for growth.</p>
                 <div className="inline-flex items-center gap-2 bg-slate-900/50 border border-slate-800 rounded-full p-1">
-                    <button className="px-4 py-2 rounded-full bg-brand-600 text-white text-sm font-semibold">Monthly</button>
-                    <button className="px-4 py-2 rounded-full text-slate-400 text-sm font-semibold hover:text-white transition-colors">Annual <span className="text-emerald-400 text-xs ml-1">(Save 20%)</span></button>
+                    <button
+                        onClick={() => setBillingPeriod('monthly')}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                            billingPeriod === 'monthly'
+                                ? 'bg-brand-600 text-white'
+                                : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        onClick={() => setBillingPeriod('annual')}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                            billingPeriod === 'annual'
+                                ? 'bg-brand-600 text-white'
+                                : 'text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        Annual <span className="text-emerald-400 text-xs ml-1">(Save 20%)</span>
+                    </button>
                 </div>
             </div>
             
@@ -266,10 +306,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                 {/* Per User */}
                 <div className="glass-panel border border-slate-800 p-8 rounded-3xl relative overflow-hidden group hover:border-slate-600 transition-colors">
                     <h3 className="text-xl font-bold text-white mb-2">Per User</h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-4xl font-bold text-white">$49</span>
-                        <span className="text-slate-500">/user/mo</span>
+                    <div className="flex items-baseline gap-1 mb-2">
+                        <span className="text-4xl font-bold text-white">${pricing.perUser.price}</span>
+                        <span className="text-slate-500">{pricing.perUser.period}</span>
                     </div>
+                    {billingPeriod === 'annual' && (
+                        <p className="text-emerald-400 text-xs font-semibold mb-4">{pricing.perUser.savings}</p>
+                    )}
                     <p className="text-slate-400 text-sm mb-8">Perfect for individual reps or small teams getting started.</p>
 
                     <ul className="space-y-4 mb-8">
@@ -304,10 +347,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                     </div>
 
                     <h3 className="text-xl font-bold text-white mb-2">Team Plan</h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-4xl font-bold text-white">$299</span>
-                        <span className="text-slate-500">/month</span>
+                    <div className="flex items-baseline gap-1 mb-2">
+                        <span className="text-4xl font-bold text-white">${pricing.team.price}</span>
+                        <span className="text-slate-500">{pricing.team.period}</span>
                     </div>
+                    {billingPeriod === 'annual' && (
+                        <p className="text-emerald-400 text-xs font-semibold mb-4">{pricing.team.savings}</p>
+                    )}
                     <p className="text-slate-400 text-sm mb-8">For growing teams up to 10 users. Best value per user.</p>
 
                     <ul className="space-y-4 mb-8">
@@ -340,10 +386,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onSignupClick }
                 {/* Company Unlimited */}
                 <div className="glass-panel border border-slate-800 p-8 rounded-3xl relative overflow-hidden group hover:border-slate-600 transition-colors">
                     <h3 className="text-xl font-bold text-white mb-2">Company Unlimited</h3>
-                    <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-4xl font-bold text-white">$999</span>
-                        <span className="text-slate-500">/month</span>
+                    <div className="flex items-baseline gap-1 mb-2">
+                        <span className="text-4xl font-bold text-white">${pricing.company.price}</span>
+                        <span className="text-slate-500">{pricing.company.period}</span>
                     </div>
+                    {billingPeriod === 'annual' && (
+                        <p className="text-emerald-400 text-xs font-semibold mb-4">{pricing.company.savings}</p>
+                    )}
                     <p className="text-slate-400 text-sm mb-8">Enterprise solution for unlimited users and custom needs.</p>
 
                     <ul className="space-y-4 mb-8">
