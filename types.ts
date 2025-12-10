@@ -30,6 +30,14 @@ export interface User {
   avatarUrl: string;
 }
 
+export interface TrainingRecommendation {
+  id: string;
+  title: string;
+  type: 'PDF' | 'VIDEO';
+  category: string;
+  reason: string;
+}
+
 export interface CallAnalysisResult {
   score: number;
   summary: string;
@@ -38,6 +46,7 @@ export interface CallAnalysisResult {
   tone: string;
   emotionalIntelligence: number;
   transcript: string;
+  recommendedTraining?: TrainingRecommendation[];
 }
 
 export interface RoleplayMessage {

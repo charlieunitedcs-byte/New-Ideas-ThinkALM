@@ -60,7 +60,7 @@ const Signup: React.FC<SignupProps> = ({ onSignupComplete, onBackToLogin }) => {
           plan: formData.plan,
           status: 'Trialing',
           totalUsers: 1,
-          monthlyRevenue: formData.plan === SubscriptionPlan.PRO ? 2500 : 990
+          monthlyRevenue: formData.plan === SubscriptionPlan.COMPANY ? 999 : formData.plan === SubscriptionPlan.TEAM ? 299 : 49
         });
 
         // Create user account linked to the client

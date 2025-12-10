@@ -26,7 +26,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     contactName: '',
     email: '',
     phone: '',
-    plan: SubscriptionPlan.ESSENTIALS,
+    plan: SubscriptionPlan.TEAM,
     status: 'Trialing' as const,
     totalUsers: 1,
     monthlyRevenue: 0
@@ -87,7 +87,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
         contactName: '',
         email: '',
         phone: '',
-        plan: SubscriptionPlan.ESSENTIALS,
+        plan: SubscriptionPlan.TEAM,
         status: 'Trialing',
         totalUsers: 1,
         monthlyRevenue: 0
@@ -270,7 +270,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
                   <td className="p-4 text-slate-300">{client.contactName}</td>
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      client.plan === SubscriptionPlan.PRO
+                      client.plan === SubscriptionPlan.COMPANY
                         ? 'bg-brand-900/30 border border-brand-500/30 text-brand-300'
                         : 'bg-blue-900/30 border border-blue-500/30 text-blue-300'
                     }`}>
@@ -367,8 +367,9 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
                   onChange={(e) => setNewClient({ ...newClient, plan: e.target.value as SubscriptionPlan })}
                   className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-500/50"
                 >
-                  <option value={SubscriptionPlan.ESSENTIALS}>{SubscriptionPlan.ESSENTIALS}</option>
-                  <option value={SubscriptionPlan.PRO}>{SubscriptionPlan.PRO}</option>
+                  <option value={SubscriptionPlan.PER_USER}>{SubscriptionPlan.PER_USER}</option>
+                  <option value={SubscriptionPlan.TEAM}>{SubscriptionPlan.TEAM}</option>
+                  <option value={SubscriptionPlan.COMPANY}>{SubscriptionPlan.COMPANY}</option>
                 </select>
               </div>
               <div>

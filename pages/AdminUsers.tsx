@@ -4,11 +4,11 @@ import { User, UserRole, SubscriptionPlan } from '../types';
 import { NotificationContext } from '../App';
 
 const mockUsers: User[] = [
-  { id: '1', name: 'Alex Chen', email: 'alex@company.com', role: UserRole.ADMIN, team: 'Sales Alpha', plan: SubscriptionPlan.PRO, status: 'Active', lastLogin: '2 mins ago', avatarUrl: 'https://picsum.photos/seed/1/100' },
-  { id: '2', name: 'Sarah Miller', email: 'sarah@company.com', role: UserRole.MEMBER, team: 'Sales Alpha', plan: SubscriptionPlan.PRO, status: 'Active', lastLogin: '1 day ago', avatarUrl: 'https://picsum.photos/seed/2/100' },
-  { id: '3', name: 'James Wilson', email: 'james@company.com', role: UserRole.MEMBER, team: 'Sales Alpha', plan: SubscriptionPlan.PRO, status: 'Trialing', lastLogin: '5 hours ago', avatarUrl: 'https://picsum.photos/seed/3/100' },
-  { id: '4', name: 'Emily Davis', email: 'emily@company.com', role: UserRole.MEMBER, team: 'Sales Bravo', plan: SubscriptionPlan.ESSENTIALS, status: 'Active', lastLogin: '2 days ago', avatarUrl: 'https://picsum.photos/seed/4/100' },
-  { id: '5', name: 'Michael Brown', email: 'michael@company.com', role: UserRole.MEMBER, team: 'Sales Bravo', plan: SubscriptionPlan.ESSENTIALS, status: 'Cancelled', lastLogin: '1 week ago', avatarUrl: 'https://picsum.photos/seed/5/100' },
+  { id: '1', name: 'Alex Chen', email: 'alex@company.com', role: UserRole.ADMIN, team: 'Sales Alpha', plan: SubscriptionPlan.COMPANY, status: 'Active', lastLogin: '2 mins ago', avatarUrl: 'https://picsum.photos/seed/1/100' },
+  { id: '2', name: 'Sarah Miller', email: 'sarah@company.com', role: UserRole.MEMBER, team: 'Sales Alpha', plan: SubscriptionPlan.COMPANY, status: 'Active', lastLogin: '1 day ago', avatarUrl: 'https://picsum.photos/seed/2/100' },
+  { id: '3', name: 'James Wilson', email: 'james@company.com', role: UserRole.MEMBER, team: 'Sales Alpha', plan: SubscriptionPlan.COMPANY, status: 'Trialing', lastLogin: '5 hours ago', avatarUrl: 'https://picsum.photos/seed/3/100' },
+  { id: '4', name: 'Emily Davis', email: 'emily@company.com', role: UserRole.MEMBER, team: 'Sales Bravo', plan: SubscriptionPlan.TEAM, status: 'Active', lastLogin: '2 days ago', avatarUrl: 'https://picsum.photos/seed/4/100' },
+  { id: '5', name: 'Michael Brown', email: 'michael@company.com', role: UserRole.MEMBER, team: 'Sales Bravo', plan: SubscriptionPlan.TEAM, status: 'Cancelled', lastLogin: '1 week ago', avatarUrl: 'https://picsum.photos/seed/5/100' },
 ];
 
 const AdminUsers: React.FC = () => {
