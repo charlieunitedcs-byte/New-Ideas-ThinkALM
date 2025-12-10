@@ -1,6 +1,6 @@
 
 import React, { useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -54,16 +54,30 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
   const { notify } = useContext(NotificationContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
   const [selectedCall, setSelectedCall] = useState<CallHistoryItem | null>(null);
 
+  // Refresh call history on mount, route change, and when window regains focus
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      const history = getCallHistory(currentUser.id);
-      setCallHistory(history);
-    }
-  }, []);
+    const loadHistory = () => {
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        const history = getCallHistory(currentUser.id);
+        setCallHistory(history);
+      }
+    };
+
+    // Load history
+    loadHistory();
+
+    // Reload when window regains focus (user navigates back)
+    window.addEventListener('focus', loadHistory);
+
+    return () => {
+      window.removeEventListener('focus', loadHistory);
+    };
+  }, [location.pathname]); // Re-run when route changes
 
   const handleDeleteCall = (callId: string) => {
     if (confirm("Are you sure you want to delete this call analysis?")) {
