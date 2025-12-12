@@ -1,6 +1,6 @@
 
 import React, { useContext, useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -54,7 +54,6 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
   const { notify } = useContext(NotificationContext);
   const navigate = useNavigate();
-  const location = useLocation();
   const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
   const [selectedCall, setSelectedCall] = useState<CallHistoryItem | null>(null);
 
@@ -68,16 +67,20 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
       }
     };
 
-    // Load history
+    // Load history immediately
     loadHistory();
 
-    // Reload when window regains focus (user navigates back)
+    // Reload when hash changes (navigation in HashRouter)
+    window.addEventListener('hashchange', loadHistory);
+
+    // Reload when window regains focus (user switches tabs)
     window.addEventListener('focus', loadHistory);
 
     return () => {
+      window.removeEventListener('hashchange', loadHistory);
       window.removeEventListener('focus', loadHistory);
     };
-  }, [location.pathname]); // Re-run when route changes
+  }, []); // Run once on mount and set up listeners
 
   const handleDeleteCall = (callId: string) => {
     if (confirm("Are you sure you want to delete this call analysis?")) {
