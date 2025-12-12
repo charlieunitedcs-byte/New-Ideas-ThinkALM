@@ -107,7 +107,48 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
     };
   };
 
+  // Generate performance chart data from real calls
+  const generateChartData = () => {
+    if (callHistory.length === 0) {
+      return [];
+    }
+
+    // Group calls by day for last 7 days
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return {
+        name: days[date.getDay()],
+        date: date.toDateString(),
+        calls: 0,
+        totalScore: 0,
+        score: 0
+      };
+    });
+
+    // Populate with actual call data
+    callHistory.forEach(call => {
+      const callDate = new Date(call.analyzedAt).toDateString();
+      const dayData = last7Days.find(d => d.date === callDate);
+      if (dayData) {
+        dayData.calls += 1;
+        dayData.totalScore += call.score;
+      }
+    });
+
+    // Calculate average scores
+    last7Days.forEach(day => {
+      if (day.calls > 0) {
+        day.score = Math.round(day.totalScore / day.calls);
+      }
+    });
+
+    return last7Days;
+  };
+
   const stats = calculateStats();
+  const chartData = demoMode ? mockActivityData : generateChartData();
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -194,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
         </div>
       )}
 
-      {demoMode && (
+      {(stats || demoMode) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 glass-panel rounded-2xl p-6 border border-slate-800/50">
             <div className="flex justify-between items-center mb-8">
@@ -206,7 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
             </div>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockActivityData}>
+                <BarChart data={chartData}>
                   <defs>
                       <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
@@ -231,35 +272,37 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
             </div>
           </div>
 
-          <div className="glass-panel rounded-2xl p-6 border border-slate-800/50 flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-6">Recommended Training</h3>
-            <div className="flex-1 space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  onClick={() => notify("Added to your personalized learning path.", "success")}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-brand-500/30 hover:bg-slate-900/60 transition-all cursor-pointer group"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <span className="text-2xl">📚</span>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-200 group-hover:text-brand-300 transition-colors">Objection Handling {i}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                       <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
-                       <p className="text-xs text-slate-500">High Priority</p>
+          {demoMode && (
+            <div className="glass-panel rounded-2xl p-6 border border-slate-800/50 flex flex-col">
+              <h3 className="text-lg font-bold text-white mb-6">Recommended Training</h3>
+              <div className="flex-1 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    onClick={() => notify("Added to your personalized learning path.", "success")}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800 hover:border-brand-500/30 hover:bg-slate-900/60 transition-all cursor-pointer group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">📚</span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-200 group-hover:text-brand-300 transition-colors">Objection Handling {i}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                         <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                         <p className="text-xs text-slate-500">High Priority</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <button
+                onClick={() => window.location.hash = '#/training'}
+                className="w-full mt-6 py-3 text-sm font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all border border-slate-700"
+              >
+                View All Materials
+              </button>
             </div>
-            <button
-              onClick={() => window.location.hash = '#/training'}
-              className="w-full mt-6 py-3 text-sm font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all border border-slate-700"
-            >
-              View All Materials
-            </button>
-          </div>
+          )}
         </div>
       )}
 
