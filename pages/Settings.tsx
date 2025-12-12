@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Award, Zap, Briefcase, Lock, CheckCircle2, Cloud, ChevronRight, Star, Settings as SettingsIcon, Mail, Key } from 'lucide-react';
 import { Badge, User } from '../types';
-import { updateUserEmail, updateUserPassword } from '../services/authService';
+import { updateUserEmail, updateUserPassword, isSuperAdmin } from '../services/authService';
 
 const mockBadges: Badge[] = [
     { id: '1', name: 'First Call', description: 'Analyzed your first sales call', icon: '📞', achievedDate: '2023-09-01' },
@@ -332,43 +332,46 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, current
                             <h2 className="text-2xl font-bold text-white mb-6">System Preferences</h2>
 
                             <div className="space-y-6">
-                                {/* Demo Mode Toggle */}
-                                <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-800">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                                                🎮 Demo Mode
-                                            </h3>
-                                            <p className="text-sm text-slate-400">
-                                                Display sample data and demo indicators throughout the application.
-                                                Turn this off when showing the app to real clients.
+                                {/* Demo Mode Toggle - Only visible to Super Admin */}
+                                {isSuperAdmin(currentUser) && (
+                                    <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-800">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                                    🎮 Demo Mode
+                                                    <span className="text-xs font-normal text-brand-400 bg-brand-900/30 border border-brand-500/30 px-2 py-0.5 rounded">Super Admin Only</span>
+                                                </h3>
+                                                <p className="text-sm text-slate-400">
+                                                    Display sample data and demo indicators throughout the application.
+                                                    Turn this off when showing the app to real clients.
+                                                </p>
+                                            </div>
+                                            <div className="ml-6">
+                                                <button
+                                                    onClick={() => onToggleDemoMode(!demoMode)}
+                                                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                                                        demoMode ? 'bg-brand-600' : 'bg-slate-700'
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                                                            demoMode ? 'translate-x-7' : 'translate-x-1'
+                                                        }`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                                            <p className="text-xs text-amber-200">
+                                                <strong>Note:</strong> When demo mode is {demoMode ? 'enabled' : 'disabled'},
+                                                {demoMode
+                                                    ? ' you\'ll see a banner at the top and sample data throughout the app.'
+                                                    : ' the app will look production-ready without any demo indicators.'}
                                             </p>
                                         </div>
-                                        <div className="ml-6">
-                                            <button
-                                                onClick={() => onToggleDemoMode(!demoMode)}
-                                                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                                                    demoMode ? 'bg-brand-600' : 'bg-slate-700'
-                                                }`}
-                                            >
-                                                <span
-                                                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                                                        demoMode ? 'translate-x-7' : 'translate-x-1'
-                                                    }`}
-                                                />
-                                            </button>
-                                        </div>
                                     </div>
-
-                                    <div className="mt-4 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
-                                        <p className="text-xs text-amber-200">
-                                            <strong>Note:</strong> When demo mode is {demoMode ? 'enabled' : 'disabled'},
-                                            {demoMode
-                                                ? ' you\'ll see a banner at the top and sample data throughout the app.'
-                                                : ' the app will look production-ready without any demo indicators.'}
-                                        </p>
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Additional System Settings */}
                                 <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-800">
