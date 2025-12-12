@@ -90,6 +90,25 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
     }
   };
 
+  // Calculate real stats from call history
+  const calculateStats = () => {
+    if (callHistory.length === 0) {
+      return null;
+    }
+
+    const totalCalls = callHistory.length;
+    const avgScore = Math.round(
+      callHistory.reduce((sum, call) => sum + call.score, 0) / totalCalls
+    );
+
+    return {
+      totalCalls,
+      avgScore
+    };
+  };
+
+  const stats = calculateStats();
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
@@ -113,7 +132,49 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
         </div>
       </div>
 
-      {!demoMode ? (
+      {/* Show real stats if available, otherwise show appropriate message */}
+      {stats || demoMode ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              title="Calls Analyzed"
+              value={demoMode ? "1,284" : stats?.totalCalls.toString() || "0"}
+              change="+12%"
+              icon={Mic}
+              color="text-brand-400"
+              bgGradient="from-brand-500 to-red-600"
+            />
+            <StatCard
+              title="Avg. Quality Score"
+              value={demoMode ? "84" : stats?.avgScore.toString() || "0"}
+              change="+4.5%"
+              icon={Zap}
+              color="text-accent-400"
+              bgGradient="from-accent-500 to-orange-600"
+            />
+            {demoMode && (
+              <>
+                <StatCard
+                  title="Roleplay Sessions"
+                  value="342"
+                  change="+18%"
+                  icon={Users}
+                  color="text-blue-400"
+                  bgGradient="from-blue-500 to-cyan-600"
+                />
+                <StatCard
+                  title="Training Hours"
+                  value="45h"
+                  change="+2%"
+                  icon={Clock}
+                  color="text-emerald-400"
+                  bgGradient="from-emerald-500 to-green-600"
+                />
+              </>
+            )}
+          </div>
+        </>
+      ) : (
         <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -131,43 +192,6 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
             </button>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Calls Analyzed"
-              value="1,284"
-              change="+12%"
-              icon={Mic}
-              color="text-brand-400"
-              bgGradient="from-brand-500 to-red-600"
-            />
-            <StatCard
-              title="Avg. Quality Score"
-              value="84"
-              change="+4.5%"
-              icon={Zap}
-              color="text-accent-400"
-              bgGradient="from-accent-500 to-orange-600"
-            />
-            <StatCard
-              title="Roleplay Sessions"
-              value="342"
-              change="+18%"
-              icon={Users}
-              color="text-blue-400"
-              bgGradient="from-blue-500 to-cyan-600"
-            />
-            <StatCard
-              title="Training Hours"
-              value="45h"
-              change="+2%"
-              icon={Clock}
-              color="text-emerald-400"
-              bgGradient="from-emerald-500 to-green-600"
-            />
-          </div>
-        </>
       )}
 
       {demoMode && (
