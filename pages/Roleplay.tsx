@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Share2, Check, Mic, MicOff, Activity } from 'lucide-react';
+import { RefreshCw, Share2, Check, Mic, MicOff, Activity, Bot } from 'lucide-react';
 import { connectToLiveSession, LiveSessionController } from '../services/geminiService';
 import { getSystemPrompt } from '../services/agentSettingsService';
 
