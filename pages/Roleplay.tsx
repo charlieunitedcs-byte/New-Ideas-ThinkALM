@@ -60,12 +60,7 @@ const Roleplay: React.FC = () => {
     const customPrompt = getSystemPrompt();
     const session = startRoleplaySession(customPrompt);
     setChatSession(session);
-    setMessages([{
-      id: 'init',
-      role: 'model',
-      text: "Hi there. I saw your ad for Think ABC. I'm slightly interested, but we're pretty happy with our current spreadsheets. Convince me otherwise.",
-      timestamp: new Date()
-    }]);
+    setMessages([]);
   };
 
   const toggleVoiceMode = async () => {
