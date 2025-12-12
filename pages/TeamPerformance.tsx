@@ -124,6 +124,8 @@ const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
     [{name: 'James', score: 92}, {name: 'David', score: 90}, {name: 'Sarah', score: 88}, {name: 'Michael', score: 85}, {name: 'Emily', score: 79}] :
     (realStats?.leaderboard || []);
 
+  const hasData = !demoMode && callHistory.length > 0;
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -131,16 +133,38 @@ const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
           <h1 className="text-3xl font-bold text-white">Team Pulse</h1>
           <p className="text-slate-400">Real-time team performance metrics and leaderboards.</p>
         </div>
-        <button
-          onClick={() => notify("Team performance report exported to CSV and downloaded to your computer.", "success")}
-          className="px-5 py-2.5 bg-slate-900 text-slate-200 rounded-xl text-sm border border-slate-700 hover:bg-slate-800 hover:text-white transition-all font-medium"
-        >
-          Export Report
-        </button>
+        {(hasData || demoMode) && (
+          <button
+            onClick={() => notify("Team performance report exported to CSV and downloaded to your computer.", "success")}
+            className="px-5 py-2.5 bg-slate-900 text-slate-200 rounded-xl text-sm border border-slate-700 hover:bg-slate-800 hover:text-white transition-all font-medium"
+          >
+            Export Report
+          </button>
+        )}
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {!hasData && !demoMode ? (
+        <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Users size={40} className="text-slate-600" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">No Team Data Yet</h3>
+            <p className="text-slate-400 mb-6">
+              Team performance metrics will appear here once team members start analyzing calls with their names.
+            </p>
+            <button
+              onClick={() => window.location.hash = '#/calls'}
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium shadow-lg shadow-brand-500/25 transition-all"
+            >
+              Analyze Your First Call
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {demoMode && (
           <div className="glass-panel border border-brand-500/30 p-6 rounded-2xl relative overflow-hidden">
              <div className="absolute top-0 right-0 w-24 h-24 bg-brand-500/10 rounded-bl-full"></div>
@@ -292,8 +316,10 @@ const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
                 </button>
               </div>
             )}
+          </div>
         </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

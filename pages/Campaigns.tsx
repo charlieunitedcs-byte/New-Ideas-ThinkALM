@@ -27,50 +27,10 @@ import {
 } from 'lucide-react';
 import { NotificationContext } from '../App';
 
-const mockCampaigns: Campaign[] = [
-  { 
-    id: '1', 
-    name: 'Q4 Enterprise Outreach', 
-    status: 'Active', 
-    startDate: '2023-10-01', 
-    totalCalls: 1240, 
-    avgScore: 82, 
-    revenue: 450000, 
-    teamMembers: ['Alex', 'Sarah', 'James'] 
-  },
-  { 
-    id: '2', 
-    name: 'SMB Cold Call Blitz', 
-    status: 'Active', 
-    startDate: '2023-11-15', 
-    totalCalls: 850, 
-    avgScore: 76, 
-    revenue: 125000, 
-    teamMembers: ['Emily', 'Michael'] 
-  },
-  { 
-    id: '3', 
-    name: 'Webinar Follow-up', 
-    status: 'Paused', 
-    startDate: '2023-09-01', 
-    totalCalls: 320, 
-    avgScore: 88, 
-    revenue: 68000, 
-    teamMembers: ['Alex', 'James'] 
-  },
-];
-
-const repPerformanceData = [
-  { name: 'Alex', calls: 145, conversion: 22 },
-  { name: 'Sarah', calls: 132, conversion: 28 },
-  { name: 'James', calls: 160, conversion: 18 },
-  { name: 'Emily', calls: 98, conversion: 25 },
-];
-
 const Campaigns: React.FC = () => {
   const { notify } = useContext(NotificationContext);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign>(mockCampaigns[0]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignStartDate, setNewCampaignStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -98,8 +58,10 @@ const Campaigns: React.FC = () => {
     if (confirm("Are you sure you want to delete this campaign?")) {
       const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
       setCampaigns(updatedCampaigns);
-      if (selectedCampaign.id === campaignId && updatedCampaigns.length > 0) {
+      if (selectedCampaign?.id === campaignId && updatedCampaigns.length > 0) {
         setSelectedCampaign(updatedCampaigns[0]);
+      } else if (selectedCampaign?.id === campaignId) {
+        setSelectedCampaign(null);
       }
       notify("Campaign deleted successfully!", "success");
     }
@@ -122,9 +84,29 @@ const Campaigns: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Campaign List */}
-        <div className="space-y-4">
+      {campaigns.length === 0 ? (
+        <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Megaphone size={40} className="text-slate-600" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">No Campaigns Yet</h3>
+            <p className="text-slate-400 mb-6">
+              Create your first campaign to start tracking performance and organizing your sales initiatives.
+            </p>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium shadow-lg shadow-brand-500/25 transition-all inline-flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Create Your First Campaign
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Campaign List */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Active Campaigns</h3>
                 <button className="text-slate-500 hover:text-white transition-colors"><Filter size={16}/></button>
@@ -173,10 +155,11 @@ const Campaigns: React.FC = () => {
                     </button>
                 </div>
             ))}
-        </div>
+          </div>
 
-        {/* Campaign Analytics Detail View */}
-        <div className="lg:col-span-2 glass-panel border border-slate-800/50 rounded-2xl p-8 animate-fade-in">
+          {/* Campaign Analytics Detail View */}
+          {selectedCampaign && (
+            <div className="lg:col-span-2 glass-panel border border-slate-800/50 rounded-2xl p-8 animate-fade-in">
              <div className="flex justify-between items-start mb-8 border-b border-slate-800/50 pb-6">
                  <div>
                      <h2 className="text-2xl font-bold text-white mb-2">{selectedCampaign.name}</h2>
@@ -215,7 +198,7 @@ const Campaigns: React.FC = () => {
              <h3 className="text-lg font-bold text-white mb-6">Rep Performance Comparison</h3>
              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={repPerformanceData}>
+                    <BarChart data={[]}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e2030" vertical={false} />
                         <XAxis dataKey="name" stroke="#64748b" tick={{fontSize: 12}} axisLine={false} tickLine={false} dy={10} />
                         <YAxis yAxisId="left" stroke="#64748b" tick={{fontSize: 12}} orientation="left" axisLine={false} tickLine={false} />
@@ -229,8 +212,10 @@ const Campaigns: React.FC = () => {
                     </BarChart>
                 </ResponsiveContainer>
              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Create Campaign Modal */}
       {isCreateModalOpen && (
