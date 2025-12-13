@@ -334,13 +334,18 @@ export const connectToLiveSession = async (
         callbacks: {
             onopen: () => {
                 console.log("Gemini Live Session Opened");
-                
+
+                // Send initial text message to trigger AI greeting
+                sessionPromise.then((session) => {
+                    session.send("Please greet the sales rep and begin the roleplay scenario. Start the conversation naturally as a prospect.");
+                });
+
                 // Start processing microphone input
                 scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
                     const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
                     const pcmData = createPCMData(inputData);
                     const base64Data = encode(pcmData);
-                    
+
                     sessionPromise.then((session) => {
                         session.sendRealtimeInput({
                             media: {
@@ -350,7 +355,7 @@ export const connectToLiveSession = async (
                         });
                     });
                 };
-                
+
                 source.connect(scriptProcessor);
                 scriptProcessor.connect(inputAudioContext.destination);
             },
