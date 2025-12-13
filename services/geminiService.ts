@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, LiveServerMessage, Modality } from "@google/genai";
 import { CallAnalysisResult } from "../types";
+import { loadAgentSettings } from './agentSettingsService';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
@@ -335,10 +336,14 @@ export const connectToLiveSession = async (
             onopen: () => {
                 console.log("Gemini Live Session Opened");
 
-                // Send initial text message to trigger AI greeting
-                sessionPromise.then((session) => {
-                    session.send("Please greet the sales rep and begin the roleplay scenario. Start the conversation naturally as a prospect.");
-                });
+                // Check if first message is enabled in settings
+                const agentSettings = loadAgentSettings();
+                if (agentSettings.firstMessageEnabled) {
+                    // Send initial text message to trigger AI greeting
+                    sessionPromise.then((session) => {
+                        session.send("Please greet the sales rep and begin the roleplay scenario. Start the conversation naturally as a prospect.");
+                    });
+                }
 
                 // Start processing microphone input
                 scriptProcessor.onaudioprocess = (audioProcessingEvent) => {

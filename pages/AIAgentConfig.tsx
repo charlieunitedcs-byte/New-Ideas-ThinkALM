@@ -141,9 +141,16 @@ const AIAgentConfig: React.FC<AIAgentConfigProps> = ({ currentUser }) => {
                                 <p className="text-xs text-slate-400 mt-1">Agent speaks first when call connects.</p>
                             </div>
                         </div>
-                        <div className="relative inline-block w-12 h-6 rounded-full bg-brand-600 transition-colors cursor-pointer shadow-inner">
-                            <span className="absolute left-6 top-1 bg-white w-4 h-4 rounded-full transition-transform shadow"></span>
-                        </div>
+                        <button
+                            onClick={() => updateSetting('firstMessageEnabled', !settings.firstMessageEnabled)}
+                            className={`relative inline-block w-12 h-6 rounded-full transition-colors cursor-pointer shadow-inner ${
+                                settings.firstMessageEnabled ? 'bg-brand-600' : 'bg-slate-700'
+                            }`}
+                        >
+                            <span className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform shadow ${
+                                settings.firstMessageEnabled ? 'left-6' : 'left-1'
+                            }`}></span>
+                        </button>
                     </div>
                 </div>
             )}
