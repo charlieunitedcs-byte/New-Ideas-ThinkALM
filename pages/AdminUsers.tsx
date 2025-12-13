@@ -25,14 +25,21 @@ const AdminUsers: React.FC = () => {
       if (isSuperAdmin(user)) {
         // Super admin sees all users (mock data for demo)
         setDisplayUsers(mockUsers);
+      } else if (user.role === 'ADMIN') {
+        // Admins see only their team members
+        const teamMembers = mockUsers.filter(u => u.team === user.team);
+        setDisplayUsers(teamMembers);
       } else {
-        // Regular users see only their team members (empty for now until real data)
-        setDisplayUsers([]);
+        // Regular members see only their team members (but can't add)
+        const teamMembers = mockUsers.filter(u => u.team === user.team);
+        setDisplayUsers(teamMembers);
       }
     }
   }, []);
 
   const showSuperAdminData = isSuperAdmin(currentUser);
+  const isAdmin = currentUser?.role === 'ADMIN';
+  const canAddMembers = showSuperAdminData || isAdmin;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -40,20 +47,24 @@ const AdminUsers: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">User Access</h1>
           <p className="text-slate-400">
-            {showSuperAdminData ? 'Manage team roles, permissions, and subscriptions.' : 'View your team members.'}
+            {showSuperAdminData
+              ? 'Manage team roles, permissions, and subscriptions.'
+              : isAdmin
+              ? `Manage your team (${currentUser?.team}).`
+              : 'View your team members.'}
           </p>
         </div>
-        {showSuperAdminData && (
+        {canAddMembers && (
           <button
-            onClick={() => notify("Demo: In production, an invitation email would be sent to the new team member with login instructions.", "info")}
+            onClick={() => notify(`Demo: In production, an invitation email would be sent to join ${isAdmin && !showSuperAdminData ? currentUser?.team : 'the team'}.`, "info")}
             className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-brand-500/25"
           >
-            + Add Member
+            + Add Team Member
           </button>
         )}
       </div>
 
-      {!showSuperAdminData && displayUsers.length === 0 ? (
+      {displayUsers.length === 0 ? (
         <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -61,8 +72,18 @@ const AdminUsers: React.FC = () => {
             </div>
             <h3 className="text-xl font-bold text-white mb-3">No Team Members Yet</h3>
             <p className="text-slate-400 mb-6">
-              Your team members will appear here once they're added to your team.
+              {isAdmin
+                ? 'Add team members to start building your team.'
+                : 'Your team members will appear here once they\'re added to your team.'}
             </p>
+            {isAdmin && (
+              <button
+                onClick={() => notify(`Demo: In production, an invitation email would be sent to join ${currentUser?.team}.`, "info")}
+                className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-medium shadow-lg shadow-brand-500/25 transition-all"
+              >
+                Add Your First Team Member
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -89,15 +110,26 @@ const AdminUsers: React.FC = () => {
             </div>
           )}
 
+          {/* Team Info Badge - For Admins */}
+          {isAdmin && !showSuperAdminData && (
+            <div className="bg-brand-900/20 border border-brand-500/30 rounded-xl p-4 flex items-center gap-3">
+              <UsersIcon size={20} className="text-brand-400" />
+              <div>
+                <p className="text-sm font-bold text-white">Team: {currentUser?.team}</p>
+                <p className="text-xs text-slate-400">Managing {displayUsers.length} team member{displayUsers.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          )}
+
           {/* Controls */}
           <div className="flex justify-between items-center gap-4">
         <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-3 text-slate-500" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search users by name or email..." 
+            <input
+              type="text"
+              placeholder={`Search ${isAdmin && !showSuperAdminData ? 'team members' : 'users'} by name or email...`}
               className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 outline-none focus:border-brand-500"
-              onChange={() => {}} 
+              onChange={() => {}}
             />
         </div>
         <button
