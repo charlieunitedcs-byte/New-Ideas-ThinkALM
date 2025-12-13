@@ -1,7 +1,8 @@
-import React, { useContext } from 'react';
-import { User as UserIcon, MoreVertical, Shield, CreditCard, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import React, { useContext, useState, useEffect } from 'react';
+import { User as UserIcon, MoreVertical, Shield, CreditCard, CheckCircle, XCircle, Search, Filter, Users as UsersIcon } from 'lucide-react';
 import { User, UserRole, SubscriptionPlan } from '../types';
 import { NotificationContext } from '../App';
+import { getCurrentUser, isSuperAdmin } from '../services/authService';
 
 const mockUsers: User[] = [
   { id: '1', name: 'Alex Chen', email: 'alex@company.com', role: UserRole.ADMIN, team: 'Sales Alpha', plan: SubscriptionPlan.COMPANY, status: 'Active', lastLogin: '2 mins ago', avatarUrl: 'https://picsum.photos/seed/1/100' },
@@ -13,24 +14,62 @@ const mockUsers: User[] = [
 
 const AdminUsers: React.FC = () => {
   const { notify } = useContext(NotificationContext);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [displayUsers, setDisplayUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    setCurrentUser(user);
+
+    if (user) {
+      if (isSuperAdmin(user)) {
+        // Super admin sees all users (mock data for demo)
+        setDisplayUsers(mockUsers);
+      } else {
+        // Regular users see only their team members (empty for now until real data)
+        setDisplayUsers([]);
+      }
+    }
+  }, []);
+
+  const showSuperAdminData = isSuperAdmin(currentUser);
 
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">User Access</h1>
-          <p className="text-slate-400">Manage team roles, permissions, and subscriptions.</p>
+          <p className="text-slate-400">
+            {showSuperAdminData ? 'Manage team roles, permissions, and subscriptions.' : 'View your team members.'}
+          </p>
         </div>
-        <button
-          onClick={() => notify("Demo: In production, an invitation email would be sent to the new team member with login instructions.", "info")}
-          className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-brand-500/25"
-        >
-          + Add Member
-        </button>
+        {showSuperAdminData && (
+          <button
+            onClick={() => notify("Demo: In production, an invitation email would be sent to the new team member with login instructions.", "info")}
+            className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-brand-500/25"
+          >
+            + Add Member
+          </button>
+        )}
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {!showSuperAdminData && displayUsers.length === 0 ? (
+        <div className="glass-panel rounded-2xl p-16 border border-slate-800/50 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UsersIcon size={40} className="text-slate-600" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">No Team Members Yet</h3>
+            <p className="text-slate-400 mb-6">
+              Your team members will appear here once they're added to your team.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Stats Row - Only for Super Admin */}
+          {showSuperAdminData && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-panel border border-slate-800/50 p-6 rounded-2xl">
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Total Users</p>
             <p className="text-3xl font-bold text-white mt-1">1,240</p>
@@ -47,10 +86,11 @@ const AdminUsers: React.FC = () => {
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">MRR</p>
             <p className="text-3xl font-bold text-white mt-1">$54.2k</p>
         </div>
-      </div>
+            </div>
+          )}
 
-      {/* Controls */}
-      <div className="flex justify-between items-center gap-4">
+          {/* Controls */}
+          <div className="flex justify-between items-center gap-4">
         <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-3 text-slate-500" size={18} />
             <input 
@@ -60,16 +100,16 @@ const AdminUsers: React.FC = () => {
               onChange={() => {}} 
             />
         </div>
-        <button 
+        <button
           onClick={() => notify("Advanced filters applied.")}
           className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/50 border border-slate-800 rounded-xl text-sm font-medium text-slate-300 hover:text-white"
         >
             <Filter size={16} /> Filter
         </button>
-      </div>
+          </div>
 
-      {/* Table */}
-      <div className="glass-panel border border-slate-800/50 rounded-2xl overflow-hidden">
+          {/* Table */}
+          <div className="glass-panel border border-slate-800/50 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -84,7 +124,7 @@ const AdminUsers: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {mockUsers.map((user) => (
+              {displayUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-brand-900/10 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
@@ -140,24 +180,28 @@ const AdminUsers: React.FC = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 border-t border-slate-800/50 bg-slate-900/30 flex items-center justify-between text-xs text-slate-400 font-medium">
-             <span>Showing 5 of 1240 results</span>
-             <div className="flex gap-2">
-                <button 
-                  onClick={() => notify("Already at start.")}
-                  className="px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <button 
-                  onClick={() => notify("Loading more users...")}
-                  className="px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white"
-                >
-                  Next
-                </button>
-             </div>
-        </div>
-      </div>
+            {showSuperAdminData && (
+              <div className="px-6 py-4 border-t border-slate-800/50 bg-slate-900/30 flex items-center justify-between text-xs text-slate-400 font-medium">
+                <span>Showing {displayUsers.length} of 1240 results</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => notify("Already at start.")}
+                    className="px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => notify("Loading more users...")}
+                    className="px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
