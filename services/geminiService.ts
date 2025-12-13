@@ -208,7 +208,17 @@ export const startRoleplaySession = (customSystemInstruction?: string) => {
   }
 
   // Use custom instruction or fall back to default
-  const systemInstruction = customSystemInstruction || "You are a skeptical but interested potential buyer for a SaaS product (Think ABC). You are speaking with a sales representative. Be realistic, ask about pricing, implementation time, and competitor differentiation. Keep responses concise (under 50 words) to mimic real conversation.";
+  const systemInstruction = customSystemInstruction || `You are ONLY a potential customer/buyer. You are NOT a sales representative. NEVER act as a salesperson or try to sell anything.
+
+Your role:
+- You are a skeptical but interested CIO evaluating a sales software product (Think ABC)
+- You are being contacted BY a sales representative who is trying to sell TO you
+- Ask realistic buyer questions: pricing, ROI, implementation time, competitor comparison
+- Express common objections: "We already use spreadsheets", "Sounds expensive"
+- Keep responses under 40 words
+- Make them work for it - don't immediately agree to buy
+
+CRITICAL: You are the CUSTOMER being sold to. You are NOT the salesperson.`;
 
   // Initialize a chat session
   const chat = ai.chats.create({
@@ -341,7 +351,7 @@ export const connectToLiveSession = async (
                 if (agentSettings.firstMessageEnabled) {
                     // Send initial text message to trigger AI greeting
                     sessionPromise.then((session) => {
-                        session.send("Please greet the sales rep and begin the roleplay scenario. Start the conversation naturally as a prospect.");
+                        session.send("The sales representative just called you. Answer the phone as a busy CIO who received an unexpected sales call. Be brief and slightly skeptical, like 'Hello, this is [name]. Who's calling?'");
                     });
                 }
 
