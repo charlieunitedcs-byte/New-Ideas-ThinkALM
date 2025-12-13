@@ -29,7 +29,10 @@ import { NotificationContext } from '../App';
 
 const Campaigns: React.FC = () => {
   const { notify } = useContext(NotificationContext);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+    const saved = localStorage.getItem('think-abc-campaigns');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState('');
@@ -47,7 +50,9 @@ const Campaigns: React.FC = () => {
       revenue: 0,
       teamMembers: []
     };
-    setCampaigns([newCampaign, ...campaigns]);
+    const updatedCampaigns = [newCampaign, ...campaigns];
+    setCampaigns(updatedCampaigns);
+    localStorage.setItem('think-abc-campaigns', JSON.stringify(updatedCampaigns));
     setSelectedCampaign(newCampaign);
     setIsCreateModalOpen(false);
     setNewCampaignName('');
@@ -58,6 +63,7 @@ const Campaigns: React.FC = () => {
     if (confirm("Are you sure you want to delete this campaign?")) {
       const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
       setCampaigns(updatedCampaigns);
+      localStorage.setItem('think-abc-campaigns', JSON.stringify(updatedCampaigns));
       if (selectedCampaign?.id === campaignId && updatedCampaigns.length > 0) {
         setSelectedCampaign(updatedCampaigns[0]);
       } else if (selectedCampaign?.id === campaignId) {

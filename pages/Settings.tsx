@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, Zap, Briefcase, Lock, CheckCircle2, Cloud, ChevronRight, Star, Settings as SettingsIcon, Mail, Key } from 'lucide-react';
 import { Badge, User } from '../types';
-import { updateUserEmail, updateUserPassword, isSuperAdmin } from '../services/authService';
+import { updateUserEmail, updateUserPassword, isSuperAdmin, getCurrentUser } from '../services/authService';
+import { getCallHistory } from '../services/callHistoryService';
 
-const mockBadges: Badge[] = [
-    { id: '1', name: 'First Call', description: 'Analyzed your first sales call', icon: '📞', achievedDate: '2023-09-01' },
-    { id: '2', name: 'Roleplay Star', description: 'Scored 90+ in a roleplay session', icon: '⭐', achievedDate: '2023-10-15' },
-    { id: '3', name: 'Quick Learner', description: 'Completed 5 training modules', icon: '🎓', achievedDate: '2023-11-20' },
-    { id: '4', name: 'Deal Closer', description: 'Recorded 10 successful closes', icon: '🤝', achievedDate: undefined },
-];
+const calculateBadges = (userId: string): Badge[] => {
+    const callHistory = getCallHistory(userId);
+    const totalCalls = callHistory.length;
+    const highScoreCalls = callHistory.filter(call => call.score >= 90).length;
+
+    return [
+        {
+            id: '1',
+            name: 'First Call',
+            description: 'Analyzed your first sales call',
+            icon: '📞',
+            achievedDate: totalCalls >= 1 ? callHistory[0]?.analyzedAt : undefined
+        },
+        {
+            id: '2',
+            name: 'High Performer',
+            description: 'Achieved a score of 90 or higher',
+            icon: '⭐',
+            achievedDate: highScoreCalls >= 1 ? callHistory.find(c => c.score >= 90)?.analyzedAt : undefined
+        },
+        {
+            id: '3',
+            name: 'Call Champion',
+            description: 'Analyzed 5 or more calls',
+            icon: '🎓',
+            achievedDate: totalCalls >= 5 ? callHistory[4]?.analyzedAt : undefined
+        },
+        {
+            id: '4',
+            name: 'Perfect Score',
+            description: 'Achieved a perfect score of 100',
+            icon: '🤝',
+            achievedDate: callHistory.find(c => c.score === 100)?.analyzedAt
+        },
+    ];
+};
 
 interface SettingsProps {
     demoMode: boolean;
@@ -20,6 +51,7 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, currentUser, onUserUpdate }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [crmConnected, setCrmConnected] = useState(false);
+    const [badges, setBadges] = useState<Badge[]>([]);
 
     // Account Settings State
     const [newEmail, setNewEmail] = useState('');
@@ -27,6 +59,14 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, current
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [accountMessage, setAccountMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+    // Load achievements when component mounts or tab changes
+    useEffect(() => {
+        if (currentUser && activeTab === 'profile') {
+            const userBadges = calculateBadges(currentUser.id);
+            setBadges(userBadges);
+        }
+    }, [currentUser, activeTab]);
 
     const handleEmailChange = () => {
         if (!newEmail.trim() || !currentPassword.trim()) {
@@ -134,13 +174,20 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, current
                             <div className="mb-8 p-6 bg-gradient-to-r from-brand-900/60 to-slate-900 border border-brand-500/30 rounded-2xl flex items-center justify-between relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                                 <div className="relative z-10">
-                                    <p className="text-xs font-bold text-brand-300 uppercase tracking-widest mb-1">Current Status</p>
-                                    <p className="text-4xl font-bold text-white tracking-tight">Level 5</p>
+                                    <p className="text-xs font-bold text-brand-300 uppercase tracking-widest mb-1">Achievements</p>
+                                    <p className="text-4xl font-bold text-white tracking-tight">
+                                        {badges.filter(b => b.achievedDate).length} / {badges.length}
+                                    </p>
                                     <div className="flex items-center gap-2 mt-2">
                                         <div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                            <div className="bg-brand-500 h-full w-[70%]"></div>
+                                            <div
+                                                className="bg-brand-500 h-full transition-all"
+                                                style={{ width: `${(badges.filter(b => b.achievedDate).length / badges.length) * 100}%` }}
+                                            ></div>
                                         </div>
-                                        <p className="text-xs text-slate-400 font-medium">3,450 / 5,000 XP</p>
+                                        <p className="text-xs text-slate-400 font-medium">
+                                            {badges.filter(b => b.achievedDate).length} earned
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.3)] rotate-3">
@@ -149,7 +196,7 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, current
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                {mockBadges.map(badge => (
+                                {badges.map(badge => (
                                     <div key={badge.id} className={`p-6 rounded-2xl border flex flex-col items-center text-center transition-all group hover:scale-105 duration-300 ${badge.achievedDate ? 'bg-slate-900/60 border-brand-500/20 shadow-lg shadow-black/20' : 'bg-slate-950/30 border-slate-800 opacity-60 grayscale'}`}>
                                         <div className="text-4xl mb-4 transform group-hover:scale-110 transition-transform">{badge.icon}</div>
                                         <h3 className="text-sm font-bold text-slate-200">{badge.name}</h3>
