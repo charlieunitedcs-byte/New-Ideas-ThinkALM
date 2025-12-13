@@ -53,14 +53,38 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
   const model = "gemini-1.5-flash-latest";
   
   const prompt = `
-    You are an expert sales coach for "Think ABC". Analyze the following sales call transcript.
-    Provide a JSON response with:
-    1. A performance score (0-100).
-    2. A brief executive summary (max 2 sentences).
-    3. Top 3 strengths.
-    4. Top 3 areas for improvement.
-    5. Tone analysis - analyze the sales rep's tone (e.g., confident, hesitant, enthusiastic, pushy, professional, etc.)
-    6. Emotional intelligence score (0-100) - how well did the rep read and respond to the prospect's emotions?
+    You are a STRICT expert sales coach for "Think ABC" with 20+ years of enterprise sales experience. You have high standards and rarely give scores above 90.
+
+    SCORING RUBRIC (Be tough - scores of 95+ should be exceptional and rare):
+
+    90-100 (Elite): Masterful execution across all areas. Handled objections expertly, built genuine rapport, asked probing discovery questions, delivered crisp value proposition, and closed with specific next steps. Near-perfect call flow. (VERY RARE - only 1% of calls)
+
+    80-89 (Strong): Solid performance with minor gaps. Good discovery, clear value communication, addressed most objections, but may have missed opportunities for deeper questioning or stronger close.
+
+    70-79 (Competent): Adequate execution but noticeable issues. Some discovery questions, mentioned value, but weak on objection handling, pushy tone, or vague next steps.
+
+    60-69 (Needs Improvement): Struggling in multiple areas. Poor discovery, weak value articulation, failed to address objections, or unprofessional tone.
+
+    Below 60 (Poor): Major deficiencies. No discovery, pitched without listening, rude/pushy, or completely failed to advance the deal.
+
+    CRITICAL DEDUCTIONS:
+    - No discovery questions: -20 points
+    - Didn't listen to prospect: -15 points
+    - Too pushy/aggressive: -15 points
+    - Vague or no next steps: -10 points
+    - Poor objection handling: -10 points
+    - Talked too much (>70% of conversation): -10 points
+    - No value proposition articulated: -15 points
+
+    Be REALISTIC and HARSH. Most calls are 65-80. Great calls are 80-89. Only exceptional calls deserve 90+.
+
+    Analyze the following sales call transcript and provide:
+    1. A performance score (0-100) - BE STRICT
+    2. A brief executive summary (max 2 sentences)
+    3. Top 3 strengths (be specific with examples)
+    4. Top 3 areas for improvement (be specific and actionable)
+    5. Tone analysis - analyze the sales rep's tone
+    6. Emotional intelligence score (0-100) - how well did the rep read and respond to prospect emotions?
 
     Transcript:
     "${transcript}"
@@ -120,16 +144,39 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     const base64Audio = await fileToBase64(audioFile);
 
     const prompt = `
-      You are an expert sales coach for "Think ABC".
+      You are a STRICT expert sales coach for "Think ABC" with 20+ years of enterprise sales experience. You have high standards and rarely give scores above 90.
+
+      SCORING RUBRIC (Be tough - scores of 95+ should be exceptional and rare):
+
+      90-100 (Elite): Masterful execution across all areas. Handled objections expertly, built genuine rapport, asked probing discovery questions, delivered crisp value proposition, and closed with specific next steps. Near-perfect call flow. (VERY RARE - only 1% of calls)
+
+      80-89 (Strong): Solid performance with minor gaps. Good discovery, clear value communication, addressed most objections, but may have missed opportunities for deeper questioning or stronger close.
+
+      70-79 (Competent): Adequate execution but noticeable issues. Some discovery questions, mentioned value, but weak on objection handling, pushy tone, or vague next steps.
+
+      60-69 (Needs Improvement): Struggling in multiple areas. Poor discovery, weak value articulation, failed to address objections, or unprofessional tone.
+
+      Below 60 (Poor): Major deficiencies. No discovery, pitched without listening, rude/pushy, or completely failed to advance the deal.
+
+      CRITICAL DEDUCTIONS:
+      - No discovery questions: -20 points
+      - Didn't listen to prospect: -15 points
+      - Too pushy/aggressive: -15 points
+      - Vague or no next steps: -10 points
+      - Poor objection handling: -10 points
+      - Talked too much (>70% of conversation): -10 points
+      - No value proposition articulated: -15 points
+
+      Be REALISTIC and HARSH. Most calls are 65-80. Great calls are 80-89. Only exceptional calls deserve 90+.
 
       Listen to this sales call recording and provide a comprehensive analysis.
 
       Provide a JSON response with:
       1. transcript - the full transcript of the conversation with speaker labels (Sales Rep: and Prospect:)
-      2. score - performance score (0-100)
+      2. score - performance score (0-100) - BE STRICT
       3. summary - brief executive summary (max 2 sentences)
-      4. strengths - array of top 3 strengths
-      5. improvements - array of top 3 areas for improvement
+      4. strengths - array of top 3 strengths (be specific with examples)
+      5. improvements - array of top 3 areas for improvement (be specific and actionable)
       6. tone - analyze the sales rep's tone (e.g., confident, hesitant, enthusiastic, pushy, professional)
       7. emotionalIntelligence - score (0-100) for how well the rep read and responded to prospect emotions
     `;
