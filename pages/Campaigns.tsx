@@ -30,8 +30,13 @@ import { NotificationContext } from '../App';
 const Campaigns: React.FC = () => {
   const { notify } = useContext(NotificationContext);
   const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    const saved = localStorage.getItem('think-abc-campaigns');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('think-abc-campaigns');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading campaigns from localStorage:', error);
+      return [];
+    }
   });
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -118,18 +123,18 @@ const Campaigns: React.FC = () => {
                 <button className="text-slate-500 hover:text-white transition-colors"><Filter size={16}/></button>
             </div>
             {campaigns.map(campaign => (
-                <div 
+                <div
                     key={campaign.id}
                     onClick={() => setSelectedCampaign(campaign)}
                     className={`p-5 rounded-xl border cursor-pointer transition-all group relative overflow-hidden ${
-                        selectedCampaign.id === campaign.id 
-                        ? 'bg-brand-900/20 border-brand-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]' 
+                        selectedCampaign?.id === campaign.id
+                        ? 'bg-brand-900/20 border-brand-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
                         : 'bg-slate-900/40 border-slate-800 hover:border-slate-600'
                     }`}
                 >
                     <div className="flex justify-between items-start mb-3 relative z-10">
                         <div>
-                            <h4 className={`font-bold text-lg ${selectedCampaign.id === campaign.id ? 'text-white' : 'text-slate-300'}`}>
+                            <h4 className={`font-bold text-lg ${selectedCampaign?.id === campaign.id ? 'text-white' : 'text-slate-300'}`}>
                                 {campaign.name}
                             </h4>
                             <div className="flex items-center gap-2 mt-1">
@@ -137,7 +142,7 @@ const Campaigns: React.FC = () => {
                                 <span className="text-xs text-slate-500 font-medium">{campaign.status}</span>
                             </div>
                         </div>
-                        <ChevronRight className={`transition-transform ${selectedCampaign.id === campaign.id ? 'text-brand-400 translate-x-1' : 'text-slate-600'}`} size={20} />
+                        <ChevronRight className={`transition-transform ${selectedCampaign?.id === campaign.id ? 'text-brand-400 translate-x-1' : 'text-slate-600'}`} size={20} />
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4 relative z-10">
                         <div>
