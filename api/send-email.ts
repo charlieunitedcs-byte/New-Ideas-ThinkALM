@@ -1,8 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { verifyAuth, type AuthenticatedRequest } from '../middleware/auth';
 
 // Email sending API endpoint
 // This uses Resend (resend.com) for email delivery
 // Set RESEND_API_KEY in Vercel environment variables
+// PROTECTED: Requires JWT authentication
 
 interface SendEmailRequest {
   type: 'client-signup' | 'report' | 'notification';
@@ -25,13 +27,39 @@ interface SendEmailRequest {
 }
 
 export default async function handler(
-  req: VercelRequest,
+  req: AuthenticatedRequest,
   res: VercelResponse,
 ) {
+  // Set CORS headers - whitelist specific origins
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+  const origin = req.headers.origin || '';
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // AUTHENTICATION REQUIRED - Verify JWT token
+  const isAuthenticated = await verifyAuth(req, res);
+  if (!isAuthenticated) {
+    // verifyAuth already sent the 401 response
+    return;
+  }
+
+  // Log authenticated request for audit trail
+  console.log(`📧 Email send requested by user: ${req.userId} (${req.userEmail})`);
 
   try {
     const { type, to, data } = req.body as SendEmailRequest;

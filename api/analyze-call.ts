@@ -1,8 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { verifyAuth, type AuthenticatedRequest } from '../middleware/auth';
 
 // Backend API for call analysis - bulletproof with proper error handling
 // Uses Gemini for AUDIO (native audio support) and text analysis
 // This endpoint is STABLE and won't randomly break
+// PROTECTED: Requires JWT authentication
 
 interface AnalyzeCallRequest {
   transcript?: string;
@@ -22,16 +24,21 @@ interface CallAnalysisResult {
 }
 
 export default async function handler(
-  req: VercelRequest,
+  req: AuthenticatedRequest,
   res: VercelResponse,
 ) {
-  // Set CORS headers
+  // Set CORS headers - whitelist specific origins
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+  const origin = req.headers.origin || '';
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'Content-Type, Authorization'
   );
 
   // Handle OPTIONS request
@@ -43,6 +50,16 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
+
+  // AUTHENTICATION REQUIRED - Verify JWT token
+  const isAuthenticated = await verifyAuth(req, res);
+  if (!isAuthenticated) {
+    // verifyAuth already sent the 401 response
+    return;
+  }
+
+  // Log authenticated request for audit trail
+  console.log(`📞 Call analysis requested by user: ${req.userId} (${req.userEmail})`);
 
   try {
     const { transcript, audioUrl, audioBase64, audioMimeType } = req.body as AnalyzeCallRequest;
