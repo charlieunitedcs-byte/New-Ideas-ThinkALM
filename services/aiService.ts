@@ -1,6 +1,7 @@
 // BULLETPROOF AI Service - Uses backend API with automatic fallbacks
 // This version will NOT randomly break like the old direct API calls
 import { CallAnalysisResult } from '../types';
+import { authenticatedFetch } from './authService';
 
 /**
  * Analyzes a call transcript using BACKEND API
@@ -11,11 +12,9 @@ export const analyzeCallTranscript = async (transcript: string): Promise<CallAna
   try {
     console.log('🚀 Analyzing call via backend API (bulletproof)...');
 
-    const response = await fetch('/api/analyze-call', {
+    // Use authenticatedFetch to include JWT token automatically
+    const response = await authenticatedFetch('/api/analyze-call', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         transcript: transcript
       })
@@ -96,11 +95,9 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     const { uploadAudioFile } = await import('./audioStorageService');
     const uploadResult = await uploadAudioFile(audioFile);
 
-    const response = await fetch('/api/analyze-call', {
+    // Use authenticatedFetch to include JWT token automatically
+    const response = await authenticatedFetch('/api/analyze-call', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         audioUrl: uploadResult.url,        // Supabase URL (preferred)
         audioBase64: uploadResult.base64,  // Fallback for small files

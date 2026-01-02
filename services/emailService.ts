@@ -1,5 +1,6 @@
 // Email Service - Send emails via API
 // This service provides a simple interface to send various types of emails
+import { authenticatedFetch } from './authService';
 
 export interface EmailOptions {
   type: 'client-signup' | 'report' | 'notification';
@@ -26,11 +27,9 @@ export interface EmailOptions {
  */
 export const sendEmail = async (options: EmailOptions): Promise<{ success: boolean; error?: string }> => {
   try {
-    const response = await fetch('/api/send-email', {
+    // Use authenticatedFetch to include JWT token automatically
+    const response = await authenticatedFetch('/api/send-email', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(options)
     });
 

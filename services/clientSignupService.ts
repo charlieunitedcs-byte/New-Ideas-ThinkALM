@@ -1,5 +1,6 @@
 // Client Signup Service - Manage client onboarding forms
 import { Client } from '../types';
+import { authenticatedFetch } from './authService';
 
 const PENDING_SIGNUPS_KEY = 'think-abc-pending-signups';
 
@@ -113,11 +114,9 @@ export const getSignupData = (token: string): ClientSignupData | null => {
 // Send email with signup link
 export const sendSignupEmail = async (email: string, companyName: string, link: string, contactName?: string): Promise<void> => {
   try {
-    const response = await fetch('/api/send-email', {
+    // Use authenticatedFetch to include JWT token automatically
+    const response = await authenticatedFetch('/api/send-email', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         type: 'client-signup',
         to: email,

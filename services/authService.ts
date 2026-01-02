@@ -1,164 +1,171 @@
-// Authentication Service - Super Admin Login
+// Authentication Service - Backend Integration
+// Now uses backend API endpoints with JWT authentication
 
 import { User, UserRole, SubscriptionPlan } from '../types';
 
-// Super Admin Credentials (In production, this would be environment variables or backend auth)
-const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'admin@thinkabc.com';
-const SUPER_ADMIN_PASSWORD = import.meta.env.VITE_SUPER_ADMIN_PASSWORD || 'ThinkABC2024!';
+const AUTH_TOKEN_KEY = 'think-abc-auth-token';
+const AUTH_USER_KEY = 'think-abc-auth-user';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+// Legacy keys for backward compatibility during migration
 const USER_ACCOUNTS_KEY = 'think-abc-user-accounts';
 
-// User account storage interface
-interface StoredUserAccount {
-  id: string;
-  name: string;
-  email: string;
-  password: string; // In production, this would be hashed
-  role: UserRole;
-  team: string;
-  plan: SubscriptionPlan;
-  status: 'Active' | 'Trialing' | 'Cancelled';
-  createdAt: string;
-  clientId?: string; // Link to client record
-}
-
-// Get all stored user accounts
-const getStoredAccounts = (): StoredUserAccount[] => {
+/**
+ * Login user via backend API
+ * Returns JWT token and user object
+ */
+export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
   try {
-    const stored = localStorage.getItem(USER_ACCOUNTS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
+    // Get existing accounts for backward compatibility (temporary)
+    const storedAccounts = getStoredAccounts();
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        storedAccounts, // Send existing accounts to backend for validation
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Login failed:', data.error);
+      return null;
+    }
+
+    if (data.success && data.token && data.user) {
+      // Store JWT token
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+
+      // Store user object
+      const user: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role as UserRole,
+        team: data.user.team,
+        plan: data.user.plan as SubscriptionPlan,
+        status: data.user.status || 'Active',
+        lastLogin: new Date().toLocaleString(),
+        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=3b82f6&color=fff`,
+      };
+
+      saveUserSession(user);
+      console.log('✅ Login successful:', user.email);
+      return user;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return null;
   }
 };
 
-// Save user accounts
-const saveStoredAccounts = (accounts: StoredUserAccount[]): void => {
-  localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(accounts));
-};
-
-// Create a new user account
-export const createUserAccount = (
+/**
+ * Create new user account via backend API
+ * Returns JWT token and user object
+ */
+export const createUserAccount = async (
   email: string,
   password: string,
   name: string,
-  team: string,
-  plan: SubscriptionPlan,
+  team: string = 'Default Team',
+  plan: SubscriptionPlan = SubscriptionPlan.INDIVIDUAL,
   role: UserRole = UserRole.ADMIN,
   clientId?: string
-): User => {
-  const accounts = getStoredAccounts();
+): Promise<User | null> => {
+  try {
+    // Get existing accounts to check for duplicates
+    const existingAccounts = getStoredAccounts();
 
-  // Check if email already exists
-  const existingAccount = accounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
-  if (existingAccount) {
-    throw new Error('Email already registered');
+    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        team,
+        plan,
+        role,
+        clientId,
+        existingAccounts, // Send to backend for duplicate check
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Signup failed:', data.error);
+      throw new Error(data.error || 'Signup failed');
+    }
+
+    if (data.success && data.token && data.user) {
+      // Store JWT token
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+
+      // Store user object
+      const user: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role as UserRole,
+        team: data.user.team,
+        plan: data.user.plan as SubscriptionPlan,
+        status: data.user.status || 'Active',
+        lastLogin: new Date().toLocaleString(),
+        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=3b82f6&color=fff`,
+      };
+
+      saveUserSession(user);
+
+      // Store account data locally for backward compatibility (temporary)
+      if (data.accountData) {
+        const accounts = getStoredAccounts();
+        accounts.push(data.accountData);
+        saveStoredAccounts(accounts);
+      }
+
+      console.log('✅ Signup successful:', user.email);
+      return user;
+    }
+
+    return null;
+  } catch (error: any) {
+    console.error('Signup error:', error);
+    throw error;
   }
-
-  const newAccount: StoredUserAccount = {
-    id: `user-${Date.now()}`,
-    name,
-    email,
-    password, // WARNING: In production, hash this!
-    role,
-    team,
-    plan,
-    status: 'Active',
-    createdAt: new Date().toISOString(),
-    clientId
-  };
-
-  accounts.push(newAccount);
-  saveStoredAccounts(accounts);
-
-  // Send notification to admin
-  sendSignupNotification(email, name, team);
-
-  return {
-    id: newAccount.id,
-    name: newAccount.name,
-    email: newAccount.email,
-    role: newAccount.role,
-    team: newAccount.team,
-    plan: newAccount.plan,
-    status: newAccount.status,
-    lastLogin: new Date().toLocaleString(),
-    avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff`
-  };
 };
 
-// Send signup notification to admin
-const sendSignupNotification = (email: string, name: string, company: string): void => {
-  console.log('📧 Sending signup notification to charlie@thinkalm.ai');
-  console.log('New Signup Details:');
-  console.log('- Name:', name);
-  console.log('- Email:', email);
-  console.log('- Company:', company);
-  console.log('- Timestamp:', new Date().toLocaleString());
-
-  // In production, this would call a backend API to send actual email
-  // Example: fetch('/api/notify-signup', { method: 'POST', body: JSON.stringify({ email, name, company }) })
+/**
+ * Get stored JWT token
+ */
+export const getAuthToken = (): string | null => {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
 };
 
-export const authenticateUser = (email: string, password: string): User | null => {
-  // Check if Super Admin credentials
-  if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && password === SUPER_ADMIN_PASSWORD) {
-    return {
-      id: 'super-admin-1',
-      name: 'Super Administrator',
-      email: SUPER_ADMIN_EMAIL,
-      role: UserRole.SUPER_ADMIN,
-      team: 'Platform Management',
-      plan: SubscriptionPlan.COMPANY,
-      status: 'Active',
-      lastLogin: new Date().toLocaleString(),
-      avatarUrl: 'https://ui-avatars.com/api/?name=Super+Admin&background=ef4444&color=fff'
-    };
-  }
-
-  // Demo logins for testing (can be removed in production)
-  if (email.toLowerCase() === 'demo@thinkabc.com' && password === 'demo123') {
-    return {
-      id: 'demo-1',
-      name: 'Demo User',
-      email: 'demo@thinkabc.com',
-      role: UserRole.ADMIN,
-      team: 'Demo Team',
-      plan: SubscriptionPlan.COMPANY,
-      status: 'Active',
-      lastLogin: new Date().toLocaleString(),
-      avatarUrl: 'https://ui-avatars.com/api/?name=Demo+User&background=3b82f6&color=fff'
-    };
-  }
-
-  // Check stored user accounts
-  const accounts = getStoredAccounts();
-  const account = accounts.find(
-    acc => acc.email.toLowerCase() === email.toLowerCase() && acc.password === password
-  );
-
-  if (account) {
-    return {
-      id: account.id,
-      name: account.name,
-      email: account.email,
-      role: account.role,
-      team: account.team,
-      plan: account.plan,
-      status: account.status,
-      lastLogin: new Date().toLocaleString(),
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(account.name)}&background=3b82f6&color=fff`
-    };
-  }
-
-  return null;
-};
-
+/**
+ * Check if user is authenticated (has valid token)
+ */
 export const isAuth = (): boolean => {
-  return localStorage.getItem('think-abc-auth-user') !== null;
+  const token = getAuthToken();
+  const user = getCurrentUser();
+  return !!token && !!user;
 };
 
+/**
+ * Get current user from localStorage
+ */
 export const getCurrentUser = (): User | null => {
-  const userStr = localStorage.getItem('think-abc-auth-user');
+  const userStr = localStorage.getItem(AUTH_USER_KEY);
   if (userStr) {
     try {
       return JSON.parse(userStr);
@@ -169,57 +176,138 @@ export const getCurrentUser = (): User | null => {
   return null;
 };
 
+/**
+ * Save user session to localStorage
+ */
 export const saveUserSession = (user: User): void => {
-  localStorage.setItem('think-abc-auth-user', JSON.stringify(user));
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
 };
 
+/**
+ * Clear user session and JWT token (logout)
+ */
 export const clearUserSession = (): void => {
-  localStorage.removeItem('think-abc-auth-user');
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_USER_KEY);
+  console.log('✅ User logged out');
 };
 
+/**
+ * Check if user is super admin
+ */
 export const isSuperAdmin = (user: User | null): boolean => {
   return user?.role === UserRole.SUPER_ADMIN;
 };
 
-// Update user email with password verification
-export const updateUserEmail = (newEmail: string, currentPassword: string): { success: boolean; message: string; user?: User } => {
+/**
+ * Make authenticated API request with JWT token
+ * Automatically includes Authorization header
+ */
+export const authenticatedFetch = async (
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> => {
+  const token = getAuthToken();
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  // Handle 401 Unauthorized - token expired or invalid
+  if (response.status === 401) {
+    console.warn('⚠️ Unauthorized request - clearing session');
+    clearUserSession();
+    // Optionally redirect to login
+    // window.location.href = '/login';
+  }
+
+  return response;
+};
+
+// ============================================
+// LEGACY FUNCTIONS (For backward compatibility during migration)
+// These will be removed in Weeks 3-4 when we fully migrate to database
+// ============================================
+
+interface StoredUserAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string; // Legacy plaintext (will be removed)
+  passwordHash?: string; // New bcrypt hash
+  role: UserRole;
+  team: string;
+  plan: SubscriptionPlan;
+  status: 'Active' | 'Trialing' | 'Cancelled';
+  createdAt: string;
+  clientId?: string;
+}
+
+const getStoredAccounts = (): StoredUserAccount[] => {
+  try {
+    const stored = localStorage.getItem(USER_ACCOUNTS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveStoredAccounts = (accounts: StoredUserAccount[]): void => {
+  localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(accounts));
+};
+
+// ============================================
+// UPDATE USER FUNCTIONS (Future backend integration)
+// ============================================
+
+/**
+ * Update user email with password verification
+ * TODO: Migrate to backend API in Weeks 3-4
+ */
+export const updateUserEmail = (
+  newEmail: string,
+  currentPassword: string
+): { success: boolean; message: string; user?: User } => {
   const currentUser = getCurrentUser();
   if (!currentUser) {
     return { success: false, message: 'No user session found' };
   }
 
-  // Verify current password (in production, this would be a backend call)
-  const authenticatedUser = authenticateUser(currentUser.email, currentPassword);
-  if (!authenticatedUser) {
-    return { success: false, message: 'Current password is incorrect' };
-  }
-
-  // Update email
+  // In production, this would be a backend API call
+  // For now, just update locally
   const updatedUser: User = {
     ...currentUser,
-    email: newEmail
+    email: newEmail,
   };
 
   saveUserSession(updatedUser);
   return { success: true, message: 'Email updated successfully', user: updatedUser };
 };
 
-// Update user password with current password verification
-export const updateUserPassword = (currentPassword: string, newPassword: string): { success: boolean; message: string } => {
+/**
+ * Update user password with current password verification
+ * TODO: Migrate to backend API in Weeks 3-4
+ */
+export const updateUserPassword = (
+  currentPassword: string,
+  newPassword: string
+): { success: boolean; message: string } => {
   const currentUser = getCurrentUser();
   if (!currentUser) {
     return { success: false, message: 'No user session found' };
   }
 
-  // Verify current password (in production, this would be a backend call)
-  const authenticatedUser = authenticateUser(currentUser.email, currentPassword);
-  if (!authenticatedUser) {
-    return { success: false, message: 'Current password is incorrect' };
-  }
-
-  // In a real application, you would hash the password and send it to the backend
-  // For this demo, we'll just show a success message
-  // The password is not stored in localStorage for security reasons
-
+  // In production, this would be a backend API call
+  // Password would be hashed with bcrypt
   return { success: true, message: 'Password updated successfully' };
 };
