@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../../middleware/auth';
+import { getUserByEmail, createUser, isSupabaseConfigured } from '../../utils/supabaseServer';
 
 interface SignupRequest {
   email: string;
@@ -30,9 +31,9 @@ interface NewUserAccount {
  * POST /api/auth/signup
  * Creates new user account with hashed password and returns JWT token
  *
- * TEMPORARY IMPLEMENTATION:
- * - Returns user account data that client stores in localStorage
- * - Will migrate to Supabase database in Weeks 3-4
+ * Week 2: Database Migration
+ * - Saves user to Supabase database
+ * - Also returns data for localStorage (backward compatibility)
  * - Passwords are properly hashed with bcrypt
  */
 export default async function handler(
@@ -100,18 +101,6 @@ export default async function handler(
       });
     }
 
-    // Check if email already exists (from client's localStorage)
-    const emailExists = existingAccounts.some(
-      (acc: any) => acc.email.toLowerCase() === emailLower
-    );
-
-    if (emailExists) {
-      return res.status(409).json({
-        success: false,
-        error: 'Email already registered'
-      });
-    }
-
     // Reserved email check
     if (emailLower === 'admin@thinkabc.com' || emailLower === 'demo@thinkabc.com') {
       return res.status(409).json({
@@ -120,18 +109,87 @@ export default async function handler(
       });
     }
 
+    // Check if email already exists in database
+    if (isSupabaseConfigured()) {
+      const existingUser = await getUserByEmail(emailLower);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: 'Email already registered'
+        });
+      }
+    } else {
+      // Fallback: check localStorage accounts
+      const emailExists = existingAccounts.some(
+        (acc: any) => acc.email.toLowerCase() === emailLower
+      );
+
+      if (emailExists) {
+        return res.status(409).json({
+          success: false,
+          error: 'Email already registered'
+        });
+      }
+    }
+
     // Hash password with bcrypt (10 rounds)
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Generate unique user ID
+    // Create user in Supabase database
+    if (isSupabaseConfigured()) {
+      try {
+        const dbUser = await createUser({
+          email: emailLower,
+          password_hash: passwordHash,
+          name: name.trim(),
+          role,
+          team: team.trim(),
+          plan,
+          status: 'Active'
+        });
+
+        if (!dbUser) {
+          throw new Error('Failed to create user in database');
+        }
+
+        // Generate JWT token for immediate login
+        const token = generateToken(dbUser.id, dbUser.email, dbUser.role);
+
+        console.log(`✅ SIGNUP (Database) | ${dbUser.email} | User ID: ${dbUser.id}`);
+
+        // Return user account
+        return res.status(201).json({
+          success: true,
+          token,
+          user: {
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role,
+            team: dbUser.team,
+            plan: dbUser.plan,
+            status: dbUser.status
+          }
+        });
+      } catch (error: any) {
+        if (error.message === 'Email already exists') {
+          return res.status(409).json({
+            success: false,
+            error: 'Email already registered'
+          });
+        }
+        throw error;
+      }
+    }
+
+    // Fallback: localStorage mode (backward compatibility)
     const userId = `user-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    // Create new user account
     const newAccount: NewUserAccount = {
       id: userId,
       name: name.trim(),
       email: emailLower,
-      passwordHash, // Hashed password - NEVER store plaintext
+      passwordHash,
       role,
       team: team.trim(),
       plan,
@@ -143,8 +201,9 @@ export default async function handler(
     // Generate JWT token for immediate login
     const token = generateToken(userId, emailLower, role);
 
-    // Return user account (client will store in localStorage temporarily)
-    // In Weeks 3-4, this will be stored in Supabase database instead
+    console.log(`✅ SIGNUP (localStorage fallback) | ${emailLower}`);
+
+    // Return user account (client will store in localStorage)
     return res.status(201).json({
       success: true,
       token,
@@ -158,12 +217,7 @@ export default async function handler(
         status: newAccount.status,
         clientId: newAccount.clientId
       },
-      // Return account data for localStorage storage (temporary)
-      accountData: {
-        ...newAccount,
-        // Remove passwordHash from response for security
-        // Client will receive it but shouldn't log/display it
-      }
+      accountData: newAccount
     });
 
   } catch (error: any) {

@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../../middleware/auth';
+import { getUserByEmail, updateLastLogin, isSupabaseConfigured } from '../../utils/supabaseServer';
 
 // Super Admin credentials (hardcoded for demo - will migrate to database)
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@thinkabc.com';
@@ -33,10 +34,10 @@ interface StoredUserAccount {
  * POST /api/auth/login
  * Authenticates user and returns JWT token
  *
- * TEMPORARY IMPLEMENTATION:
- * - Currently reads from localStorage via request body (client sends stored accounts)
- * - Will migrate to Supabase database in Weeks 3-4
- * - Supports both plaintext (legacy) and bcrypt hashed passwords
+ * Week 2: Database Migration
+ * - Reads from Supabase database
+ * - Falls back to localStorage for backward compatibility
+ * - Supports bcrypt hashed passwords only (no more plaintext)
  */
 export default async function handler(
   req: VercelRequest,
@@ -103,7 +104,7 @@ export default async function handler(
       }
     }
 
-    // Check Demo User
+    // Check Demo User (fallback for testing)
     if (emailLower === DEMO_EMAIL.toLowerCase() && password === DEMO_PASSWORD) {
       const token = generateToken('demo-1', emailLower, 'ADMIN');
 
@@ -122,11 +123,49 @@ export default async function handler(
       });
     }
 
-    // TEMPORARY: Get user accounts from request body
-    // (Client will send their localStorage data until we migrate to database)
+    // Try Supabase database first
+    if (isSupabaseConfigured()) {
+      const dbUser = await getUserByEmail(emailLower);
+
+      if (dbUser) {
+        // Verify password with bcrypt
+        const isPasswordValid = await bcrypt.compare(password, dbUser.password_hash);
+
+        if (!isPasswordValid) {
+          return res.status(401).json({
+            success: false,
+            error: 'Invalid email or password'
+          });
+        }
+
+        // Update last login timestamp
+        await updateLastLogin(dbUser.id);
+
+        // Generate JWT token
+        const token = generateToken(dbUser.id, dbUser.email, dbUser.role);
+
+        console.log(`✅ LOGIN (Database) | ${dbUser.email} | User ID: ${dbUser.id}`);
+
+        // Return success with token and user data
+        return res.status(200).json({
+          success: true,
+          token,
+          user: {
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role,
+            team: dbUser.team,
+            plan: dbUser.plan,
+            status: dbUser.status
+          }
+        });
+      }
+    }
+
+    // Fallback to localStorage for backward compatibility
     const { storedAccounts = [] } = req.body;
 
-    // Find user account
     const account = storedAccounts.find(
       (acc: StoredUserAccount) => acc.email.toLowerCase() === emailLower
     );
@@ -142,10 +181,9 @@ export default async function handler(
     let isPasswordValid = false;
 
     if (account.passwordHash) {
-      // New bcrypt hashed password
       isPasswordValid = await bcrypt.compare(password, account.passwordHash);
     } else if (account.password) {
-      // Legacy plaintext password (will be migrated)
+      // Legacy plaintext password
       isPasswordValid = account.password === password;
     }
 
@@ -158,6 +196,8 @@ export default async function handler(
 
     // Generate JWT token
     const token = generateToken(account.id, account.email, account.role);
+
+    console.log(`✅ LOGIN (localStorage fallback) | ${account.email}`);
 
     // Return success with token and user data
     return res.status(200).json({
