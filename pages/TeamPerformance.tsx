@@ -56,9 +56,13 @@ const TeamPerformance: React.FC<TeamPerformanceProps> = ({ demoMode }) => {
 
   // Load all calls on mount and when hash changes
   useEffect(() => {
-    const loadHistory = () => {
-      const history = getCallHistory(); // Get all calls, not filtered by user
-      setCallHistory(history);
+    const loadHistory = async () => {
+      try {
+        const { calls: history } = await getCallHistory(undefined, 1, 100); // Get all calls, not filtered by user
+        setCallHistory(history);
+      } catch (err) {
+        console.error('Failed to load call history:', err);
+      }
     };
 
     loadHistory();

@@ -59,11 +59,15 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
 
   // Refresh call history on mount, route change, and when window regains focus
   useEffect(() => {
-    const loadHistory = () => {
+    const loadHistory = async () => {
       const currentUser = getCurrentUser();
       if (currentUser) {
-        const history = getCallHistory(currentUser.id);
-        setCallHistory(history);
+        try {
+          const { calls } = await getCallHistory(currentUser.id, 1, 50);
+          setCallHistory(calls);
+        } catch (err) {
+          console.error('Failed to load call history:', err);
+        }
       }
     };
 
@@ -82,11 +86,16 @@ const Dashboard: React.FC<DashboardProps> = ({ demoMode }) => {
     };
   }, []); // Run once on mount and set up listeners
 
-  const handleDeleteCall = (callId: string) => {
+  const handleDeleteCall = async (callId: string) => {
     if (confirm("Are you sure you want to delete this call analysis?")) {
-      deleteCallFromHistory(callId);
-      setCallHistory(prev => prev.filter(c => c.id !== callId));
-      notify("Call analysis deleted", "success");
+      try {
+        await deleteCallFromHistory(callId);
+        setCallHistory(prev => prev.filter(c => c.id !== callId));
+        notify("Call analysis deleted", "success");
+      } catch (err) {
+        console.error('Failed to delete call:', err);
+        notify("Failed to delete call", "error");
+      }
     }
   };
 

@@ -4,8 +4,8 @@ import { Badge, User } from '../types';
 import { updateUserEmail, updateUserPassword, isSuperAdmin, getCurrentUser } from '../services/authService';
 import { getCallHistory } from '../services/callHistoryService';
 
-const calculateBadges = (userId: string): Badge[] => {
-    const callHistory = getCallHistory(userId);
+const calculateBadges = async (userId: string): Promise<Badge[]> => {
+    const { calls: callHistory } = await getCallHistory(userId, 1, 100);
     const totalCalls = callHistory.length;
     const highScoreCalls = callHistory.filter(call => call.score >= 90).length;
 
@@ -63,8 +63,11 @@ const Settings: React.FC<SettingsProps> = ({ demoMode, onToggleDemoMode, current
     // Load achievements when component mounts or tab changes
     useEffect(() => {
         if (currentUser && activeTab === 'profile') {
-            const userBadges = calculateBadges(currentUser.id);
-            setBadges(userBadges);
+            calculateBadges(currentUser.id).then(userBadges => {
+                setBadges(userBadges);
+            }).catch(err => {
+                console.error('Failed to load badges:', err);
+            });
         }
     }, [currentUser, activeTab]);
 

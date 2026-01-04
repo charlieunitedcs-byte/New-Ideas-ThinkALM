@@ -32,10 +32,11 @@ const CallAnalysis: React.FC = () => {
       const data = await analyzeCallTranscript(transcriptInput);
       setResult(data);
 
-      // Save to call history
+      // Save to call history (async - don't block UI)
       const currentUser = getCurrentUser();
       if (currentUser) {
-        saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined);
+        saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined, currentUser.team)
+          .catch(err => console.error('Failed to save call history:', err));
       }
 
       // Trigger gamification toast
@@ -79,10 +80,11 @@ const CallAnalysis: React.FC = () => {
         setTranscriptInput(data.transcript);
         setTab('paste'); // Switch to paste tab to show transcript
 
-        // Save to call history
+        // Save to call history (async - don't block UI)
         const currentUser = getCurrentUser();
         if (currentUser) {
-          saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined);
+          saveCallToHistory(data, currentUser.id, salesRepName.trim() || undefined, currentUser.team)
+            .catch(err => console.error('Failed to save call history:', err));
         }
 
         // Trigger gamification toast
