@@ -1,13 +1,13 @@
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Campaign } from '../types';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
   Line
@@ -26,55 +26,98 @@ import {
   X
 } from 'lucide-react';
 import { NotificationContext } from '../App';
+import { getCurrentUser } from '../services/authService';
+import {
+  loadCampaigns,
+  createCampaign,
+  deleteCampaign,
+} from '../services/campaignService';
 
 const Campaigns: React.FC = () => {
   const { notify } = useContext(NotificationContext);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
-    try {
-      const saved = localStorage.getItem('think-abc-campaigns');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Error loading campaigns from localStorage:', error);
-      return [];
-    }
-  });
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignStartDate, setNewCampaignStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateCampaign = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newCampaign: Campaign = {
-      id: Date.now().toString(),
-      name: newCampaignName,
-      status: 'Active',
-      startDate: newCampaignStartDate,
-      totalCalls: 0,
-      avgScore: 0,
-      revenue: 0,
-      teamMembers: []
-    };
-    const updatedCampaigns = [newCampaign, ...campaigns];
-    setCampaigns(updatedCampaigns);
-    localStorage.setItem('think-abc-campaigns', JSON.stringify(updatedCampaigns));
-    setSelectedCampaign(newCampaign);
-    setIsCreateModalOpen(false);
-    setNewCampaignName('');
-    notify("Campaign created successfully!", "success");
+  // Load campaigns on mount
+  useEffect(() => {
+    refreshCampaigns();
+  }, []);
+
+  const refreshCampaigns = async () => {
+    setLoading(true);
+    try {
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        const { campaigns: loadedCampaigns } = await loadCampaigns(currentUser.id);
+        setCampaigns(loadedCampaigns);
+      }
+    } catch (error) {
+      console.error('Failed to load campaigns:', error);
+      notify('Failed to load campaigns', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteCampaign = (campaignId: string) => {
-    if (confirm("Are you sure you want to delete this campaign?")) {
-      const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
-      setCampaigns(updatedCampaigns);
-      localStorage.setItem('think-abc-campaigns', JSON.stringify(updatedCampaigns));
-      if (selectedCampaign?.id === campaignId && updatedCampaigns.length > 0) {
-        setSelectedCampaign(updatedCampaigns[0]);
-      } else if (selectedCampaign?.id === campaignId) {
-        setSelectedCampaign(null);
+  const handleCreateCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      notify('Please log in to create a campaign', 'error');
+      return;
+    }
+
+    try {
+      const campaignData: Omit<Campaign, 'id'> = {
+        name: newCampaignName,
+        status: 'Active',
+        startDate: newCampaignStartDate,
+        totalCalls: 0,
+        avgScore: 0,
+        revenue: 0,
+        teamMembers: []
+      };
+
+      const newCampaign = await createCampaign(campaignData, currentUser.id);
+
+      if (newCampaign) {
+        setSelectedCampaign(newCampaign);
+        setIsCreateModalOpen(false);
+        setNewCampaignName('');
+        notify("Campaign created successfully!", "success");
+        await refreshCampaigns();
+      } else {
+        notify("Failed to create campaign", "error");
       }
-      notify("Campaign deleted successfully!", "success");
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      notify("Failed to create campaign", "error");
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    if (confirm("Are you sure you want to delete this campaign?")) {
+      try {
+        const success = await deleteCampaign(campaignId);
+
+        if (success) {
+          if (selectedCampaign?.id === campaignId) {
+            setSelectedCampaign(null);
+          }
+          notify("Campaign deleted successfully!", "success");
+          await refreshCampaigns();
+        } else {
+          notify("Failed to delete campaign", "error");
+        }
+      } catch (error) {
+        console.error('Error deleting campaign:', error);
+        notify("Failed to delete campaign", "error");
+      }
     }
   };
 

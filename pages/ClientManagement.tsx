@@ -88,7 +88,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     }
 
     try {
-      const client = await createClient(newClient, 'current-user-id'); // TODO: Use actual current user ID
+      const client = await createClient(newClient, currentUser.id);
 
       // Generate signup link for the client
       const { link } = createClientSignup(client.id, newClient.email, newClient.companyName);
