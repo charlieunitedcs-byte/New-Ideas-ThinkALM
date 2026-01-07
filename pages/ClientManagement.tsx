@@ -12,6 +12,8 @@ interface ClientManagementProps {
 const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
   const { notify } = useContext(NotificationContext);
   const [clients, setClients] = useState<Client[]>([]);
+  const [stats, setStats] = useState<{ total: number; active: number; trialing: number }>({ total: 0, active: 0, trialing: 0 });
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
@@ -38,11 +40,31 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
 
   useEffect(() => {
     refreshClients();
+    loadStatsAndRevenue();
     loadStripeSettings();
   }, []);
 
-  const refreshClients = () => {
-    setClients(loadClients());
+  const refreshClients = async () => {
+    try {
+      const { clients: loadedClients } = await loadClients();
+      setClients(loadedClients);
+    } catch (error) {
+      console.error('Failed to load clients:', error);
+      setClients([]);
+    }
+  };
+
+  const loadStatsAndRevenue = async () => {
+    try {
+      const [statsData, revenue] = await Promise.all([
+        getClientStats(),
+        getTotalRevenue()
+      ]);
+      setStats(statsData);
+      setTotalRevenue(revenue);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
   };
 
   const loadStripeSettings = () => {
@@ -66,7 +88,7 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     }
 
     try {
-      const client = createClient(newClient);
+      const client = await createClient(newClient, 'current-user-id'); // TODO: Use actual current user ID
 
       // Generate signup link for the client
       const { link } = createClientSignup(client.id, newClient.email, newClient.companyName);
@@ -92,8 +114,9 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
         totalUsers: 1,
         monthlyRevenue: 0
       });
-      refreshClients();
+      await refreshClients();
     } catch (error) {
+      console.error('Failed to add client:', error);
       notify('Failed to add client', 'error');
     }
   };
@@ -108,19 +131,22 @@ const ClientManagement: React.FC<ClientManagementProps> = ({ currentUser }) => {
     notify('Signup link sent again!', 'success');
   };
 
-  const handleDeleteClient = (id: string, name: string) => {
+  const handleDeleteClient = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-      if (deleteClient(id)) {
-        notify(`Client "${name}" deleted successfully`, 'success');
-        refreshClients();
-      } else {
+      try {
+        const success = await deleteClient(id);
+        if (success) {
+          notify(`Client "${name}" deleted successfully`, 'success');
+          await refreshClients();
+        } else {
+          notify('Failed to delete client', 'error');
+        }
+      } catch (error) {
+        console.error('Failed to delete client:', error);
         notify('Failed to delete client', 'error');
       }
     }
   };
-
-  const stats = getClientStats();
-  const totalRevenue = getTotalRevenue();
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
