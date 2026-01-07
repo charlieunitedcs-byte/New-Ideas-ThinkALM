@@ -18,7 +18,8 @@ import {
   Sparkles,
   Info,
   Megaphone,
-  Building
+  Building,
+  Activity
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import CallAnalysis from './pages/CallAnalysis';
@@ -34,6 +35,7 @@ import LandingPage from './pages/LandingPage';
 import ClientManagement from './pages/ClientManagement';
 import Signup from './pages/Signup';
 import ClientSignup from './pages/ClientSignup';
+import AdminAnalytics from './pages/AdminAnalytics';
 import { UserRole, User, SubscriptionPlan } from './types';
 import { getCurrentUser, clearUserSession } from './services/authService';
 
@@ -108,6 +110,7 @@ const Sidebar = ({ isOpen, toggle, onLogout, currentUser }: { isOpen: boolean; t
             {currentUser?.role === UserRole.SUPER_ADMIN && (
               <SidebarItem to="/clients" icon={Building} label="Client Management" />
             )}
+            <SidebarItem to="/analytics" icon={Activity} label="Analytics" />
             <SidebarItem to="/admin" icon={Users} label="User Access" />
             <SidebarItem to="/settings" icon={SettingsIcon} label="Configuration" />
           </div>
@@ -362,6 +365,7 @@ const App: React.FC = () => {
                <Route path="/ai-agents" element={<AIAgentConfig currentUser={user!} />} />
                <Route path="/clients" element={<ClientManagement currentUser={user!} />} />
                <Route path="/admin" element={<AdminUsers />} />
+               <Route path="/analytics" element={<AdminAnalytics />} />
                <Route path="/settings" element={<Settings demoMode={demoMode} onToggleDemoMode={toggleDemoMode} currentUser={user} onUserUpdate={setUser} />} />
                <Route path="*" element={<Navigate to="/" replace />} />
              </Routes>
