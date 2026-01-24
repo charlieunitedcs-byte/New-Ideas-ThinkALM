@@ -25,10 +25,11 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
     const fileName = `temp/${timestamp}-${randomId}.${fileExt}`;
 
     console.log('📤 Uploading audio to Supabase Storage...');
+    console.log(`📊 File size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage - try 'callrecordings' bucket (no space, lowercase)
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('Call recordings')
+      .from('callrecordings')
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false
@@ -36,6 +37,7 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
 
     if (uploadError) {
       console.error('Supabase upload error:', uploadError);
+      console.error('Error details:', JSON.stringify(uploadError, null, 2));
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
@@ -43,11 +45,12 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
 
     // Create a signed URL that expires in 1 hour
     const { data: urlData, error: urlError } = await supabase.storage
-      .from('Call recordings')
+      .from('callrecordings')
       .createSignedUrl(uploadData.path, 3600); // 1 hour expiry
 
     if (urlError) {
       console.error('Supabase URL error:', urlError);
+      console.error('Error details:', JSON.stringify(urlError, null, 2));
       throw new Error(`Failed to create signed URL: ${urlError.message}`);
     }
 
@@ -60,9 +63,20 @@ export const uploadAudioFile = async (file: File): Promise<{ url?: string; base6
 
   } catch (error: any) {
     console.error('Audio upload error:', error);
+    console.error('Error stack:', error.stack);
 
-    // If upload fails, fall back to base64 (with size limit warning)
-    console.warn('Falling back to base64 due to upload error');
+    // Check file size - if it's too large for base64 fallback, throw error
+    const fileSizeMB = file.size / (1024 / 1024);
+    if (fileSizeMB > 4) {
+      throw new Error(
+        `Supabase Storage upload failed for large file (${fileSizeMB.toFixed(1)}MB). ` +
+        `Error: ${error.message}. ` +
+        `Please check Supabase Storage bucket configuration.`
+      );
+    }
+
+    // If upload fails for small files, fall back to base64
+    console.warn('Falling back to base64 for small file due to upload error');
     const base64 = await fileToBase64(file);
     return {
       base64: base64,
@@ -80,14 +94,14 @@ export const deleteAudioFile = async (url: string): Promise<void> => {
   try {
     // Extract file path from signed URL
     const urlObj = new URL(url);
-    const pathMatch = urlObj.pathname.match(/Call recordings\/(.+)\?/);
+    const pathMatch = urlObj.pathname.match(/callrecordings\/(.+)\?/);
 
     if (!pathMatch) return;
 
     const filePath = pathMatch[1];
 
     const { error } = await supabase.storage
-      .from('Call recordings')
+      .from('callrecordings')
       .remove([filePath]);
 
     if (error) {
