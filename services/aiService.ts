@@ -95,14 +95,34 @@ export const analyzeCallAudio = async (audioFile: File): Promise<CallAnalysisRes
     const { uploadAudioFile } = await import('./audioStorageService');
     const uploadResult = await uploadAudioFile(audioFile);
 
+    // Check file size
+    const fileSizeMB = audioFile.size / (1024 * 1024);
+    console.log(`📊 Audio file size: ${fileSizeMB.toFixed(2)}MB`);
+
+    // For large files (>4MB), we MUST use Supabase URL (no base64 fallback)
+    if (fileSizeMB > 4 && !uploadResult.url) {
+      throw new Error('Large audio files require Supabase Storage. Please contact support if this error persists.');
+    }
+
+    // Build request payload - only send what's available
+    const payload: any = {
+      audioMimeType: uploadResult.mimeType
+    };
+
+    if (uploadResult.url) {
+      payload.audioUrl = uploadResult.url;
+      console.log('✅ Using Supabase URL for audio');
+    } else if (uploadResult.base64) {
+      payload.audioBase64 = uploadResult.base64;
+      console.log('✅ Using base64 for small audio file');
+    } else {
+      throw new Error('Audio upload failed. Please try again.');
+    }
+
     // Use authenticatedFetch to include JWT token automatically
     const response = await authenticatedFetch('/api/analyze-call', {
       method: 'POST',
-      body: JSON.stringify({
-        audioUrl: uploadResult.url,        // Supabase URL (preferred)
-        audioBase64: uploadResult.base64,  // Fallback for small files
-        audioMimeType: uploadResult.mimeType
-      })
+      body: JSON.stringify(payload)
     });
 
     // Check if response is ok before trying to parse JSON
