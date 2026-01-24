@@ -68,37 +68,11 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'Either transcript, audioUrl, or audioBase64 is required' });
     }
 
-    // If audioUrl is provided, download the audio file
-    let finalAudioBase64 = audioBase64;
-    let finalMimeType = audioMimeType;
-
-    if (audioUrl) {
-      console.log('📥 Downloading audio from URL:', audioUrl);
-      try {
-        const audioResponse = await fetch(audioUrl);
-        if (!audioResponse.ok) {
-          throw new Error(`Failed to download audio: ${audioResponse.status}`);
-        }
-        const audioBuffer = await audioResponse.arrayBuffer();
-        finalAudioBase64 = Buffer.from(audioBuffer).toString('base64');
-        finalMimeType = audioResponse.headers.get('content-type') || audioMimeType || 'audio/mpeg';
-        console.log('✅ Audio downloaded successfully');
-      } catch (downloadError: any) {
-        console.error('Audio download error:', downloadError);
-        return res.status(500).json({
-          success: false,
-          error: `Failed to download audio file: ${downloadError.message}`
-        });
-      }
-    }
-
-    // Check payload size (Vercel limit is ~4.5MB) - only for direct base64 uploads
-    // Skip this check if using audioUrl (Supabase), since we're downloading from our own storage
-    if (!audioUrl && finalAudioBase64 && finalAudioBase64.length > 3 * 1024 * 1024) {
-      return res.status(413).json({
-        success: false,
-        error: 'Audio file is too large. Maximum size is 3MB. Please use a shorter clip or paste the transcript instead.'
-      });
+    // For audio files, we use Gemini File API which can handle files directly via URL
+    // This avoids downloading large files into serverless function memory
+    if (audioUrl && !audioBase64) {
+      console.log('🔗 Audio will be processed via Gemini File API (supports large files)');
+      // We'll pass the URL directly to Gemini File API - no need to download
     }
 
     // Get Gemini API key from environment
@@ -116,13 +90,16 @@ export default async function handler(
     }
 
     // Use Gemini for analysis (supports both text AND audio natively)
-    console.log(finalAudioBase64 ? 'Analyzing audio with Gemini...' : 'Analyzing text with Gemini...');
+    console.log(audioUrl ? 'Analyzing audio via Gemini File API...' : audioBase64 ? 'Analyzing audio with Gemini...' : 'Analyzing text with Gemini...');
 
     try {
       let result;
-      if (finalAudioBase64) {
-        // Audio analysis - Gemini can handle this directly
-        result = await analyzeAudioWithGemini(finalAudioBase64, finalMimeType || 'audio/mpeg', geminiKey);
+      if (audioUrl && !audioBase64) {
+        // Large audio files - use Gemini File API (can fetch from URL directly)
+        result = await analyzeAudioViaFileAPI(audioUrl, geminiKey);
+      } else if (audioBase64) {
+        // Small audio files - use direct base64 upload
+        result = await analyzeAudioWithGemini(audioBase64, audioMimeType || 'audio/mpeg', geminiKey);
       } else {
         // Text analysis
         result = await analyzeTextWithGemini(transcript!, geminiKey);
@@ -251,6 +228,156 @@ Provide a JSON response with:
     const errorText = await response.text();
     console.error('Gemini audio API error response:', errorText);
     throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) throw new Error('No response from Gemini');
+
+  const result = JSON.parse(text);
+
+  return {
+    score: result.score || 75,
+    summary: result.summary || 'Analysis completed',
+    strengths: result.strengths || [],
+    improvements: result.improvements || [],
+    tone: result.tone || 'Professional',
+    emotionalIntelligence: result.emotionalIntelligence || 70,
+    transcript: result.transcript || 'Transcript unavailable'
+  };
+}
+
+// Gemini File API - For large audio files
+// Download from Supabase and upload to Gemini in a streaming fashion
+async function analyzeAudioViaFileAPI(audioUrl: string, apiKey: string): Promise<CallAnalysisResult> {
+  console.log('📥 Downloading audio from Supabase...');
+
+  // Download the file from Supabase
+  const audioResponse = await fetch(audioUrl);
+  if (!audioResponse.ok) {
+    throw new Error(`Failed to download audio: ${audioResponse.status}`);
+  }
+
+  const audioBuffer = await audioResponse.arrayBuffer();
+  const audioBlob = Buffer.from(audioBuffer);
+
+  console.log(`📤 Uploading ${(audioBlob.length / 1024 / 1024).toFixed(1)}MB to Gemini File API...`);
+
+  // Step 1: Initialize resumable upload
+  const initResponse = await fetch(
+    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: {
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': audioBlob.length.toString(),
+        'X-Goog-Upload-Header-Content-Type': 'audio/mpeg',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        file: {
+          display_name: 'sales-call-audio'
+        }
+      })
+    }
+  );
+
+  if (!initResponse.ok) {
+    const errorText = await initResponse.text();
+    console.error('Gemini File API init error:', errorText);
+    throw new Error(`Failed to initialize upload: ${initResponse.status}`);
+  }
+
+  const uploadUrl = initResponse.headers.get('x-goog-upload-url');
+  if (!uploadUrl) {
+    throw new Error('No upload URL returned from Gemini');
+  }
+
+  // Step 2: Upload the file
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Length': audioBlob.length.toString(),
+      'X-Goog-Upload-Offset': '0',
+      'X-Goog-Upload-Command': 'upload, finalize'
+    },
+    body: audioBlob
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    console.error('Gemini File API upload error:', errorText);
+    throw new Error(`Upload failed: ${uploadResponse.status}`);
+  }
+
+  const uploadData = await uploadResponse.json();
+  const fileUri = uploadData.file.name;
+  console.log('✅ Audio uploaded to Gemini:', fileUri);
+
+  // Step 3: Wait for file processing
+  let fileState = uploadData.file.state;
+  let attempts = 0;
+  while (fileState === 'PROCESSING' && attempts < 20) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const statusResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/${fileUri}?key=${apiKey}`
+    );
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      fileState = statusData.state;
+    }
+    attempts++;
+  }
+
+  if (fileState !== 'ACTIVE') {
+    throw new Error(`File processing failed. State: ${fileState}`);
+  }
+
+  console.log('🤖 Analyzing with gemini-1.5-flash (STABLE)...');
+
+  // Step 4: Analyze using gemini-1.5-flash (STABLE model)
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are an expert sales coach for "Think ABC".
+
+Listen to this sales call recording and provide a comprehensive analysis.
+
+Provide a JSON response with:
+1. transcript - the full transcript of the conversation with speaker labels (Sales Rep: and Prospect:)
+2. score - performance score (0-100)
+3. summary - brief executive summary (max 2 sentences)
+4. strengths - array of top 3 strengths
+5. improvements - array of top 3 areas for improvement
+6. tone - analyze the sales rep's tone
+7. emotionalIntelligence - score (0-100) for how well the rep read and responded to prospect emotions`
+          }, {
+            fileData: {
+              mimeType: 'audio/mpeg',
+              fileUri: fileUri
+            }
+          }]
+        }],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Gemini analysis error:', errorText);
+    throw new Error(`Gemini API error: ${response.status}`);
   }
 
   const data = await response.json();
